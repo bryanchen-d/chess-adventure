@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="app-version" content="2026.11.15-0743">
+<title>Chess Adventure: chess puzzles for little learners</title>
+<style>
+:root {
+  --light: #fff4d9;
+  --dark: #7cb782;
+  --frame: #8a5a3b;
+  --accent: #ff8a3d;
+  --ink: #3b2f2f;
+  --bs: max(260px, min(94vw, calc(100vh - 270px), 600px));
+}
+@supports (height: 100dvh) {
+  :root { --bs: max(260px, min(94vw, calc(100dvh - 270px), 600px)); }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Trebuchet MS", sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, #bfe6ff 0%, #fff6e0 100%) fixed;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+}
+header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; max-width: 980px; margin: 0 auto; }
+header h1 { flex: 1; margin: 0; text-align: center; font-size: clamp(18px, 4.2vw, 30px); }
+.btn { font: inherit; font-size: clamp(16px, 3.4vw, 21px); border: 0; border-radius: 999px; padding: 10px 18px;
+  background: #fff; color: var(--ink); box-shadow: 0 4px 0 rgba(0,0,0,.15); cursor: pointer; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.icon { padding: 6px 10px; font-size: 24px; line-height: 1.2; }
+.btn.small { font-size: 15px; padding: 8px 14px; }
+.btn.on { background: #ffe08a; }
+main { max-width: 980px; margin: 0 auto; padding: 0 12px 28px; }
+.row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+
+.piece { font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols2", "DejaVu Sans", "Arial Unicode MS", serif;
+  line-height: 1; display: inline-block; }
+.piece.w { color: #fff; text-shadow: -1.5px 0 #2d2d2d, 1.5px 0 #2d2d2d, 0 -1.5px #2d2d2d, 0 1.5px #2d2d2d,
+  -1px -1px #2d2d2d, 1px 1px #2d2d2d, -1px 1px #2d2d2d, 1px -1px #2d2d2d, 0 4px 4px rgba(0,0,0,.3); }
+.piece.b { color: #1d1d1d; text-shadow: 0 0 3px rgba(255,255,255,.75), 0 4px 4px rgba(0,0,0,.3); }
+
+/* Home */
+.hello { display: flex; align-items: center; gap: 12px; justify-content: center; margin: 6px 0 18px; }
+.hello .owl { font-size: 64px; cursor: pointer; animation: bob 2.4s ease-in-out infinite; }
+.speech { background: #fff; border-radius: 22px; padding: 12px 16px; font-size: clamp(16px, 3.4vw, 21px);
+  box-shadow: 0 4px 0 rgba(0,0,0,.1); max-width: 560px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.card { background: #fff; border-radius: 22px; padding: 14px 10px; text-align: center; box-shadow: 0 6px 0 rgba(0,0,0,.12);
+  cursor: pointer; position: relative; transition: transform .15s; }
+.card:hover { transform: translateY(-3px) rotate(-1deg); }
+.card .ic { font-size: 50px; height: 66px; display: flex; align-items: center; justify-content: center; }
+.card .ic .piece { font-size: 58px; }
+.card .t { font-size: 17px; font-weight: bold; margin: 6px 0 8px; }
+.card.locked { filter: grayscale(1); opacity: .55; }
+.card.shake { animation: shake .4s; }
+.card .badge { position: absolute; top: -10px; right: -6px; font-size: 34px; animation: bob 2s ease-in-out infinite; }
+.pips { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.pip { width: 12px; height: 12px; border-radius: 50%; background: #e4e4e4; }
+.pip.on { background: #ffc107; }
+
+/* Story */
+.story { background: #fff; border-radius: 28px; padding: 22px; max-width: 660px; margin: 10px auto; text-align: center;
+  box-shadow: 0 6px 0 rgba(0,0,0,.12); }
+.story .hero { font-size: 110px; line-height: 1.15; animation: bob 2.4s ease-in-out infinite; }
+.story .hero .piece { font-size: 130px; }
+.story .hero .piece.w { text-shadow: -3px 0 #2d2d2d, 3px 0 #2d2d2d, 0 -3px #2d2d2d, 0 3px #2d2d2d, -2px -2px #2d2d2d,
+  2px 2px #2d2d2d, -2px 2px #2d2d2d, 2px -2px #2d2d2d, 0 8px 8px rgba(0,0,0,.25); }
+.story h2 { margin: 6px 0; font-size: clamp(22px, 5vw, 32px); }
+.story p { font-size: clamp(17px, 3.8vw, 23px); line-height: 1.45; }
+
+/* Puzzle screen */
+.topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; max-width: var(--bs);
+  margin: 0 auto; flex-wrap: wrap; }
+.chap { font-weight: bold; font-size: clamp(16px, 3.4vw, 20px); display: flex; align-items: center; gap: 6px; }
+.chap .piece { font-size: 30px; }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.dots button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: #fff; box-shadow: 0 2px 0 rgba(0,0,0,.15);
+  font: inherit; font-size: 13px; cursor: pointer; padding: 0; color: var(--ink); }
+.dots button.done { background: #ffd54f; }
+.dots button.cur { outline: 3px solid var(--accent); }
+.dots button:disabled { opacity: .45; cursor: default; }
+.bubble { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 20px; padding: 8px 12px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.1); margin: 8px auto 12px; max-width: var(--bs); min-height: 68px; }
+.bubble .owl { font-size: 40px; }
+.bubble .msg { flex: 1; font-size: clamp(15px, 3.3vw, 20px); line-height: 1.3; }
+.boardwrap { position: relative; width: var(--bs); height: var(--bs); margin: 0 auto; }
+.board { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  border: 8px solid var(--frame); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 0 rgba(0,0,0,.18); background: var(--frame); }
+.sq { position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.sq.l { background: var(--light); }
+.sq.d { background: var(--dark); }
+.sq.last::before { content: ""; position: absolute; inset: 0; background: rgba(255, 225, 0, .35); }
+.sq.sel::before { content: ""; position: absolute; inset: 0; background: rgba(255, 190, 0, .65); }
+.sq.danger::after { content: ""; position: absolute; inset: 0; background: rgba(255, 0, 0, .38); z-index: 2; }
+.sq.esc::after { content: ""; position: absolute; inset: 0; background: rgba(0, 120, 255, .38); z-index: 2; }
+.sq.hint::after { content: ""; position: absolute; inset: 0; z-index: 4; animation: pulse 1s infinite;
+  box-shadow: inset 0 0 0 5px #ffd400, inset 0 0 22px 8px rgba(255, 212, 0, .9); }
+.sq .piece { font-size: calc(var(--bs) * 0.094); position: relative; z-index: 5; pointer-events: none; }
+.sq .dot { position: absolute; width: 30%; height: 30%; border-radius: 50%; background: rgba(40, 110, 255, .55); z-index: 6; pointer-events: none; }
+.sq .ring { position: absolute; inset: 5%; border-radius: 50%; border: 5px solid rgba(255, 60, 60, .75); z-index: 6; pointer-events: none; }
+.sq .star { font-size: calc(var(--bs) * 0.068); animation: float 1.6s ease-in-out infinite; z-index: 4; pointer-events: none; }
+.sq .zz { position: absolute; top: 1px; right: 3px; font-size: calc(var(--bs) * 0.03); z-index: 7; pointer-events: none; }
+.sq .coord { position: absolute; font-size: 10px; opacity: .55; pointer-events: none; z-index: 1; font-family: sans-serif; }
+.sq .coord.f { bottom: 1px; right: 3px; }
+.sq .coord.r { top: 1px; left: 3px; }
+.piece.pop { animation: pop .35s; }
+.piece.wiggle { animation: wiggle 1.2s ease-in-out infinite; }
+.fx { position: absolute; inset: 8px; pointer-events: none; z-index: 20; }
+.floater { position: absolute; transform: translate(-50%, -50%); font-size: calc(var(--bs) * 0.06); font-weight: bold;
+  animation: floatup 1s forwards; white-space: nowrap; }
+.controls { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 18px; flex-wrap: wrap; }
+.info { font-size: 18px; min-width: 100px; text-align: center; }
+
+/* Modal + confetti */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center;
+  z-index: 50; padding: 16px; }
+.modal { background: #fff; border-radius: 28px; padding: 22px; max-width: 520px; width: 100%; text-align: center; animation: pop .35s; }
+.modal .big { font-size: 84px; line-height: 1.1; }
+.modal .sticker { font-size: 120px; line-height: 1.1; animation: spin 1.2s ease-out; display: inline-block; }
+.modal h2 { margin: 8px 0; font-size: clamp(22px, 5vw, 30px); }
+.modal p { font-size: 18px; }
+.rating { font-size: 40px; letter-spacing: 4px; }
+.confetti { position: fixed; top: -60px; z-index: 60; pointer-events: none; animation: fall linear forwards; }
+
+/* Sticker book + guide */
+h2.page { text-align: center; }
+.stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.stk { background: #fff; border-radius: 20px; padding: 12px; text-align: center; box-shadow: 0 4px 0 rgba(0,0,0,.1); }
+.stk .s { font-size: 62px; line-height: 1.2; }
+.stk.no .s { opacity: .35; }
+.stk .n { font-size: 14px; }
+.guide { background: #fff; border-radius: 24px; padding: 18px 24px; box-shadow: 0 6px 0 rgba(0,0,0,.1);
+  font-family: "Segoe UI", system-ui, sans-serif; user-select: text; -webkit-user-select: text; line-height: 1.55; font-size: 16px; }
+.guide h2 { margin-top: 4px; }
+.guide h3 { margin: 22px 0 6px; }
+.guide table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.guide th, .guide td { border-bottom: 1px solid #eee; padding: 6px 8px; text-align: left; vertical-align: top; }
+.guide th { background: #fff4d9; }
+.guide .settings { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.guide .small { font-size: 14px; color: #666; }
+
+/* Seasons and Season 2 extras */
+.seasons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 0 0 16px; }
+.season { font: inherit; font-size: clamp(15px, 3.2vw, 19px); border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer;
+  background: rgba(255,255,255,.6); color: var(--ink); box-shadow: 0 4px 0 rgba(0,0,0,.1); }
+.season.on { background: #fff; outline: 3px solid var(--accent); }
+.season.locked { opacity: .55; }
+.season.shake { animation: shake .4s; }
+.season .cnt, .season-head .cnt { font-size: .8em; opacity: .7; margin-left: 4px; }
+.season-head { margin: 18px 0 10px; text-align: center; }
+.guide tr.season-row th { background: #e3f4ff; font-size: 16px; }
+.sq .val { position: absolute; left: 5%; bottom: 5%; z-index: 7; pointer-events: none; background: #ffc83d; color: #3b2f2f; border-radius: 999px;
+  font: bold calc(var(--bs) * 0.026) / 1.35 "Trebuchet MS", sans-serif; padding: 0 .45em; box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+
+.sq .dot.special { width: 40%; height: 40%; background: rgba(255, 170, 0, .9); box-shadow: 0 0 0 4px rgba(255,255,255,.75); animation: pulse 1.2s infinite; }
+
+/* Moving pieces, Ollie */
+.ollie { display: block; overflow: visible; }
+.board { touch-action: none; }
+.chap { cursor: pointer; }
+.ghost { position: absolute; width: 12.5%; height: 12.5%; display: flex; align-items: center; justify-content: center;
+  z-index: 30; pointer-events: none; }
+.ghost .piece, .dragghost .piece { font-size: calc(var(--bs) * 0.094); }
+.dragghost { position: fixed; z-index: 70; pointer-events: none; transform: translate(-50%, -60%) scale(1.25); }
+.floater { text-shadow: 0 0 4px #fff, 0 2px 0 #fff; z-index: 40; }
+.stk { cursor: pointer; }
+.stk .s.pop { animation: pop .35s; }
+.guide label { display: inline-flex; align-items: center; gap: 6px; }
+.guide select { font: inherit; }
+
+@keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 75% { transform: rotate(9deg); } }
+@keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8%) scale(1.1); } }
+@keyframes pulse { 50% { opacity: .35; } }
+@keyframes bob { 50% { transform: translateY(-6px); } }
+@keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+@keyframes floatup { to { transform: translate(-50%, -170%); opacity: 0; } }
+@keyframes fall { to { transform: translateY(115vh) rotate(540deg); } }
+@keyframes spin { 0% { transform: scale(0) rotate(-360deg); } 100% { transform: scale(1) rotate(0); } }
+</style>
+</head>
+<body>
+<header>
+  <button class="btn icon" id="hHome" title="Home">🏠</button>
+  <h1>♞ Chess Adventure</h1>
+  <button class="btn icon" id="hSound" title="Voice and sounds on/off">🔊</button>
+  <button class="btn icon" id="hStick" title="Sticker book">📒</button>
+  <button class="btn icon" id="hGuide" title="For grown-ups">👪</button>
+</header>
+<main id="app"></main>
+<script id="engine">
+// Tiny chess engine for teaching. Pawns always promote to a queen.
+// Castling and en passant only happen when the caller passes castling rights or an en passant square (Season 2).
+var Chess = (function () {
+  var FILES = 'abcdefgh';
+  var KN = [[1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1], [-2, 1], [-1, 2]];
+  var ORTH = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  var DIAG = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+  var DIRS = { R: ORTH, B: DIAG, Q: ORTH.concat(DIAG), K: ORTH.concat(DIAG) };
+
+  function idx(n) { return (n.charCodeAt(1) - 49) * 8 + (n.charCodeAt(0) - 97); }
+  function name(i) { return FILES[i % 8] + ((i >> 3) + 1); }
+  function onB(f, r) { return f >= 0 && f < 8 && r >= 0 && r < 8; }
+  function isLight(i) { return ((i % 8) + (i >> 3)) % 2 === 1; }
+  function fromMap(map) {
+    var b = new Array(64).fill(null);
+    for (var k in map) b[idx(k)] = map[k];
+    return b;
+  }
+
+  function pseudoMoves(b, from) {
+    var p = b[from];
+    if (!p) return [];
+    var c = p[0], t = p[1], f = from % 8, r = from >> 3, out = [];
+    function push(to) {
+      if (b[to] && b[to][1] === 'K') return; // kings are never captured
+      out.push({ from: from, to: to, capture: b[to] || null });
+    }
+    if (t === 'N' || t === 'K') {
+      (t === 'N' ? KN : DIRS.K).forEach(function (d) {
+        var nf = f + d[0], nr = r + d[1];
+        if (!onB(nf, nr)) return;
+        var to = nr * 8 + nf;
+        if (b[to] && b[to][0] === c) return;
+        push(to);
+      });
+    } else if (t === 'P') {
+      var dir = c === 'w' ? 1 : -1, start = c === 'w' ? 1 : 6, r1 = r + dir;
+      if (onB(f, r1) && !b[r1 * 8 + f]) {
+        push(r1 * 8 + f);
+        var r2 = r + 2 * dir;
+        if (r === start && onB(f, r2) && !b[r2 * 8 + f]) push(r2 * 8 + f);
+      }
+      [-1, 1].forEach(function (df) {
+        var nf = f + df;
+        if (!onB(nf, r1)) return;
+        var to = r1 * 8 + nf;
+        if (b[to] && b[to][0] !== c) push(to);
+      });
+    } else {
+      DIRS[t].forEach(function (d) {
+        var nf = f + d[0], nr = r + d[1];
+        while (onB(nf, nr)) {
+          var to = nr * 8 + nf;
+          if (b[to]) { if (b[to][0] !== c) push(to); break; }
+          push(to);
+          nf += d[0]; nr += d[1];
+        }
+      });
+    }
+    return out;
+  }
+
+  // Squares a piece attacks (pawns attack diagonally even when the square is empty).
+  function attacks(b, from) {
+    var p = b[from], c = p[0], t = p[1], f = from % 8, r = from >> 3, out = [];
+    if (t === 'P') {
+      var dir = c === 'w' ? 1 : -1;
+      [-1, 1].forEach(function (df) { if (onB(f + df, r + dir)) out.push((r + dir) * 8 + f + df); });
+      return out;
+    }
+    if (t === 'N' || t === 'K') {
+      (t === 'N' ? KN : DIRS.K).forEach(function (d) { if (onB(f + d[0], r + d[1])) out.push((r + d[1]) * 8 + f + d[0]); });
+      return out;
+    }
+    DIRS[t].forEach(function (d) {
+      var nf = f + d[0], nr = r + d[1];
+      while (onB(nf, nr)) {
+        var to = nr * 8 + nf;
+        out.push(to);
+        if (b[to]) break;
+        nf += d[0]; nr += d[1];
+      }
+    });
+    return out;
+  }
+
+  function attackers(b, sq, byColor) {
+    var res = [];
+    for (var i = 0; i < 64; i++) {
+      if (b[i] && b[i][0] === byColor && attacks(b, i).indexOf(sq) >= 0) res.push(i);
+    }
+    return res;
+  }
+  function isAttacked(b, sq, byColor) { return attackers(b, sq, byColor).length > 0; }
+  function kingSq(b, c) { return b.indexOf(c + 'K'); }
+  function other(c) { return c === 'w' ? 'b' : 'w'; }
+  function inCheck(b, c) { var k = kingSq(b, c); return k >= 0 && isAttacked(b, k, other(c)); }
+
+  var VALUE = { P: 1, N: 3, B: 3, R: 5, Q: 9, K: 0 };
+
+  function makeMove(b, m) {
+    var nb = b.slice(), p = nb[m.from];
+    nb[m.from] = null;
+    var last = p[0] === 'w' ? 7 : 0;
+    nb[m.to] = (p[1] === 'P' && (m.to >> 3) === last) ? p[0] + 'Q' : p;
+    if (m.castle) { nb[m.rookTo] = nb[m.rookFrom]; nb[m.rookFrom] = null; }
+    if (m.ep != null) nb[m.ep] = null;
+    return nb;
+  }
+  function isLegal(b, m) { return !inCheck(makeMove(b, m), b[m.from][0]); }
+
+  // Castling: the King steps two squares toward a Rook and the Rook hops over him.
+  // rights = { k: kingside allowed, q: queenside allowed }; both pieces must still be on their start squares.
+  function castleMoves(b, c, rights) {
+    var out = [], r = c === 'w' ? 0 : 7, e = r * 8 + 4, opp = other(c);
+    if (!rights || b[e] !== c + 'K' || inCheck(b, c)) return out;
+    [['k', 7, [5, 6], [5, 6], 6, 5], ['q', 0, [1, 2, 3], [3, 2], 2, 3]].forEach(function (s) {
+      var rookSq = r * 8 + s[1];
+      if (!rights[s[0]] || b[rookSq] !== c + 'R') return;
+      if (s[2].some(function (f) { return b[r * 8 + f]; })) return;
+      if (s[3].some(function (f) { return isAttacked(b, r * 8 + f, opp); })) return;
+      out.push({ from: e, to: r * 8 + s[4], capture: null, castle: s[0], rookFrom: rookSq, rookTo: r * 8 + s[5] });
+    });
+    return out;
+  }
+  // Why a castle is not allowed right now, or '' if it is (or the side has no right).
+  function castleBlock(b, c, rights, side) {
+    var r = c === 'w' ? 0 : 7, opp = other(c);
+    if (!rights || !rights[side] || b[r * 8 + 4] !== c + 'K' || b[r * 8 + (side === 'k' ? 7 : 0)] !== c + 'R') return '';
+    if ((side === 'k' ? [5, 6] : [1, 2, 3]).some(function (f) { return b[r * 8 + f]; })) return 'blocked';
+    if (inCheck(b, c)) return 'check';
+    if ((side === 'k' ? [5, 6] : [3, 2]).some(function (f) { return isAttacked(b, r * 8 + f, opp); })) return 'attacked';
+    return '';
+  }
+  // Castling rights after a move: moving the King loses both, moving a Rook loses its side.
+  function moveRights(rights, b, m) {
+    if (!rights) return rights;
+    var p = b[m.from], r = p[0] === 'w' ? 0 : 7, out = { k: rights.k, q: rights.q };
+    if (p[1] === 'K') out.k = out.q = false;
+    if (m.from === r * 8 + 7) out.k = false;
+    if (m.from === r * 8) out.q = false;
+    return out;
+  }
+  // En passant: right after a pawn jumps two squares, an enemy pawn beside it may eat it as if it had moved one.
+  // epSquare(b, m) is the square jumped over (pass it to the next player's legalMoves), or -1.
+  function epSquare(b, m) {
+    var p = b[m.from];
+    return p && p[1] === 'P' && Math.abs(m.to - m.from) === 16 ? (m.from + m.to) / 2 : -1;
+  }
+  function epMoves(b, c, ep) {
+    var out = [];
+    if (ep == null || ep < 0 || b[ep]) return out;
+    var victim = ep - 8 * (c === 'w' ? 1 : -1), f = ep % 8;
+    if (b[victim] !== other(c) + 'P') return out;
+    [-1, 1].forEach(function (df) {
+      if (f + df < 0 || f + df > 7) return;
+      if (b[victim + df] === c + 'P') out.push({ from: victim + df, to: ep, capture: other(c) + 'P', ep: victim });
+    });
+    return out.filter(function (m) { return isLegal(b, m); });
+  }
+  function legalMoves(b, c, rights, ep) {
+    var out = [];
+    for (var i = 0; i < 64; i++) {
+      if (b[i] && b[i][0] === c) pseudoMoves(b, i).forEach(function (m) { if (isLegal(b, m)) out.push(m); });
+    }
+    if (rights) out = out.concat(castleMoves(b, c, rights));
+    if (ep != null && ep >= 0) out = out.concat(epMoves(b, c, ep));
+    return out;
+  }
+  function status(b, c) {
+    var n = legalMoves(b, c).length, chk = inCheck(b, c);
+    if (!n) return chk ? 'checkmate' : 'stalemate';
+    return chk ? 'check' : 'ok';
+  }
+
+  // Breadth-first search for "stars" and "eat" puzzles (black never moves there).
+  function solve(puzzle, board, stars, promoDone, maxNodes) {
+    var fixed = (puzzle.fixed || []).map(idx);
+    var targets = puzzle.targets ? puzzle.targets.map(idx) : null;
+    var promo = (puzzle.promoStars || []).map(idx);
+    function done(b, st) {
+      if (puzzle.type === 'stars') return st.length === 0;
+      if (targets) return targets.every(function (t) { return !b[t] || b[t][0] !== 'b'; });
+      return !b.some(function (p) { return p && p[0] === 'b'; });
+    }
+    function key(s) { return s.b.map(function (p) { return p || '.'; }).join('') + '|' + s.st.join(',') + (s.pd ? '!' : ''); }
+    var start = { b: board, st: stars.slice().sort(function (x, y) { return x - y; }), pd: !!promoDone, first: null, d: 0 };
+    if (done(start.b, start.st)) return { len: 0, first: null };
+    var seen = new Set([key(start)]), q = [start], head = 0;
+    while (head < q.length) {
+      if (seen.size > (maxNodes || 80000)) return null;
+      var s = q[head++];
+      for (var i = 0; i < 64; i++) {
+        var p = s.b[i];
+        if (!p || p[0] !== 'w' || fixed.indexOf(i) >= 0) continue;
+        var ms = pseudoMoves(s.b, i);
+        for (var j = 0; j < ms.length; j++) {
+          var m = ms[j], nb = makeMove(s.b, m), pd = s.pd;
+          var st = s.st.filter(function (x) { return x !== m.to; });
+          if (!pd && promo.length && p[1] === 'P' && nb[m.to][1] === 'Q') {
+            pd = true;
+            st = st.concat(promo.filter(function (x) { return x !== m.to; })).sort(function (x, y) { return x - y; });
+          }
+          var ns = { b: nb, st: st, pd: pd, first: s.first || m, d: s.d + 1 };
+          if (done(nb, st)) return { len: ns.d, first: ns.first };
+          var k = key(ns);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          q.push(ns);
+        }
+      }
+    }
+    return null;
+  }
+
+  // Breadth-first search over white moves while black stands still (Season 2 multi-move puzzles).
+  // opts: goal(nb, m, b) -> solved?; allow(b, m, nb) -> may white play m?; rights (castling); fixed squares; maxNodes.
+  function search(board, opts) {
+    var fixed = (opts.fixed || []).map(idx);
+    function key(b, r) { return b.map(function (p) { return p || '.'; }).join('') + (r ? (r.k ? 'k' : '-') + (r.q ? 'q' : '-') : ''); }
+    var start = { b: board, r: opts.rights || null, first: null, d: 0 };
+    var seen = new Set([key(board, start.r)]), q = [start], head = 0;
+    while (head < q.length) {
+      if (seen.size > (opts.maxNodes || 60000)) return null;
+      var s = q[head++], ms = legalMoves(s.b, 'w', s.r);
+      for (var j = 0; j < ms.length; j++) {
+        var m = ms[j];
+        if (fixed.indexOf(m.from) >= 0) continue;
+        var nb = makeMove(s.b, m);
+        if (opts.allow && !opts.allow(s.b, m, nb)) continue;
+        if (opts.goal(nb, m, s.b)) return { len: s.d + 1, first: s.first || m };
+        var ns = { b: nb, r: moveRights(s.r, s.b, m), first: s.first || m, d: s.d + 1 };
+        var k = key(nb, ns.r);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        q.push(ns);
+      }
+    }
+    return null;
+  }
+
+  // Teaching helpers shared by the app and the puzzle checker.
+  function targetsOf(b, sq) { return attacks(b, sq).filter(function (t) { return b[t] && b[t][0] !== b[sq][0]; }); }
+  function bestCapture(b, c) {
+    return legalMoves(b, c).reduce(function (v, m) { return m.capture ? Math.max(v, VALUE[m.capture[1]]) : v; }, -1);
+  }
+  // A fork: after the move, the piece attacks at least two of the targets and nobody can eat it.
+  function isFork(nb, m, targets) {
+    var hit = targetsOf(nb, m.to).filter(function (t) { return targets.indexOf(t) >= 0; });
+    return hit.length >= 2 && !isAttacked(nb, m.to, other(nb[m.to][0]));
+  }
+  function mateMoves(b, c) {
+    return legalMoves(b, c).filter(function (m) { return status(makeMove(b, m), other(c)) === 'checkmate'; });
+  }
+  // Puzzle rules: a piece must not land where black can eat it; in castle puzzles the King and Rooks keep their rights.
+  function safeLanding(b, m, nb) { return !isAttacked(nb, m.to, other(nb[m.to][0])); }
+  function startRights(b) { return { k: b[4] === 'wK' && b[7] === 'wR', q: b[4] === 'wK' && b[0] === 'wR' }; }
+  function keepsCastle(rights, b, m) {
+    if (m.castle) return true;
+    var r = moveRights(rights, b, m);
+    return r.k === rights.k && r.q === rights.q;
+  }
+  // A first move after which white can checkmate next move, whatever black replies.
+  function isMate2Key(b, m) {
+    var nb = makeMove(b, m), st = status(nb, 'b');
+    if (st === 'checkmate') return true;
+    if (st === 'stalemate') return false;
+    return legalMoves(nb, 'b').every(function (r) { return mateMoves(makeMove(nb, r), 'w').length > 0; });
+  }
+
+  return {
+    idx: idx, name: name, isLight: isLight, fromMap: fromMap, pseudoMoves: pseudoMoves, attacks: attacks,
+    attackers: attackers, isAttacked: isAttacked, kingSq: kingSq, inCheck: inCheck, makeMove: makeMove,
+    isLegal: isLegal, legalMoves: legalMoves, status: status, solve: solve, VALUE: VALUE,
+    castleMoves: castleMoves, castleBlock: castleBlock, moveRights: moveRights, search: search,
+    targetsOf: targetsOf, bestCapture: bestCapture, isFork: isFork, mateMoves: mateMoves, isMate2Key: isMate2Key,
+    safeLanding: safeLanding, startRights: startRights, keepsCastle: keepsCastle, epSquare: epSquare, epMoves: epMoves
+  };
+})();
+</script>
+<script id="data">
+// Each adventure = a short story + a few tiny puzzles. One new idea at a time.
+// Chapters without a season belong to Season 1. A season opens when the one before it is finished.
+var SEASONS = [
+  { n: 1, icon: '🌱', title: 'Season 1: Learn the Moves' },
+  { n: 2, icon: '🌟', title: 'Season 2: Little Champion' }
+];
+var CHAPTERS = [
+  { id: 'board', icon: '🌈', title: 'Hello, Board!', sticker: '🦄',
+    story: 'The chess board is a magic land with 64 squares. Some squares are light and some are dark, like a checkerboard. Let\'s explore it!',
+    puzzles: [
+      { type: 'tap', text: 'Tap all the stars on the board! ⭐', stars: ['c3', 'f6', 'b7', 'g2'] },
+      { type: 'meet', text: 'Meet the chess family! Tap each piece to say hello. 👋',
+        pieces: { b4: 'wR', c4: 'wN', d4: 'wB', e4: 'wQ', f4: 'wK', g4: 'wP' } },
+      { type: 'tap', text: 'The corner by your RIGHT hand is always a light square. "Light on the right!" Tap it! 👉', stars: ['h1'] }
+    ] },
+  { id: 'rook', piece: 'R', icon: '🏰', title: 'Rook the Tower', sticker: '🚂',
+    story: 'This is the Rook. It looks like a castle tower! The Rook moves in straight lines: up, down, left or right, as far as it wants, like a train on its tracks. Choo-choo!',
+    puzzles: [
+      { type: 'explore', text: 'Tap the Rook to see where it can go. Move it 3 times!', pieces: { d4: 'wR' }, moves: 3 },
+      { type: 'stars', text: 'Move the Rook UP to the star!', pieces: { a1: 'wR' }, stars: ['a6'] },
+      { type: 'stars', text: 'Now zoom sideways to the star!', pieces: { b3: 'wR' }, stars: ['g3'] },
+      { type: 'stars', text: 'Two stars! Go up, then sideways.', pieces: { a1: 'wR' }, stars: ['a7', 'f7'] },
+      { type: 'stars', text: 'Collect all three stars!', pieces: { h1: 'wR' }, stars: ['h5', 'c5', 'c2'] },
+      { type: 'stars', text: 'A sleepy pawn 💤 is in the way, and Rooks can\'t jump! Find another road to the star.',
+        pieces: { a1: 'wR', a4: 'wP' }, fixed: ['a4'], stars: ['a8'] }
+    ] },
+  { id: 'bishop', piece: 'B', icon: '⛪', title: 'Bishop the Slider', sticker: '🛝',
+    story: 'This is the Bishop. It wears a pointy hat! The Bishop slides on diagonals, corner to corner, like going down a slide. Wheee! A Bishop on a light square stays on light squares forever.',
+    puzzles: [
+      { type: 'explore', text: 'Tap the Bishop and slide it 3 times!', pieces: { d4: 'wB' }, moves: 3 },
+      { type: 'stars', text: 'Slide the Bishop to the star!', pieces: { c1: 'wB' }, stars: ['g5'] },
+      { type: 'stars', text: 'Two stars to collect!', pieces: { c1: 'wB' }, stars: ['h6', 'f8'] },
+      { type: 'stars', text: 'This Bishop lives on light squares. Grab all the stars!', pieces: { f1: 'wB' }, stars: ['b5', 'e8', 'h5'] },
+      { type: 'stars', text: 'A sleepy pawn 💤 is blocking the road. Find a way around!',
+        pieces: { b2: 'wB', d4: 'wP' }, fixed: ['d4'], stars: ['g7'] }
+    ] },
+  { id: 'queen', piece: 'Q', icon: '👑', title: 'Queen the Super-Hero', sticker: '🦸',
+    story: 'This is the Queen, the strongest piece! She moves like the Rook AND the Bishop: straight lines and diagonals, as far as she wants. Super-hero powers!',
+    puzzles: [
+      { type: 'explore', text: 'Tap the Queen and fly her around 3 times!', pieces: { d4: 'wQ' }, moves: 3 },
+      { type: 'stars', text: 'Fly the Queen to both stars!', pieces: { d1: 'wQ' }, stars: ['h5', 'h8'] },
+      { type: 'stars', text: 'Four stars! Straight or diagonal: the Queen can do both.', pieces: { e4: 'wQ' }, stars: ['b7', 'b1', 'g1', 'g6'] },
+      { type: 'stars', text: 'Visit all four corners of the board!', pieces: { d4: 'wQ' }, stars: ['a1', 'a8', 'h8', 'h1'] }
+    ] },
+  { id: 'king', piece: 'K', icon: '🤴', title: 'The King', sticker: '🦁',
+    story: 'This is the King, the most important piece of all! The King is a bit slow: he walks just ONE step at a time, in any direction. Step, step, step!',
+    puzzles: [
+      { type: 'explore', text: 'Tap the King and walk 3 steps!', pieces: { e4: 'wK' }, moves: 3 },
+      { type: 'stars', text: 'Walk the King to the star. One step at a time!', pieces: { e1: 'wK' }, stars: ['e3'] },
+      { type: 'stars', text: 'Collect the stars around the King!', pieces: { d4: 'wK' }, stars: ['c5', 'd6', 'e5'] },
+      { type: 'stars', text: 'The King can walk diagonally too. Go get them!', pieces: { c3: 'wK' }, stars: ['e5', 'g7'] }
+    ] },
+  { id: 'knight', piece: 'N', icon: '🐴', title: 'Knight the Jumping Horse', sticker: '🦘',
+    story: 'This is the Knight. It\'s a horse! It moves in an L shape: two steps one way, then one step to the side. Gallop, gallop, turn! The Knight is the ONLY piece that can jump over others.',
+    puzzles: [
+      { type: 'explore', text: 'Tap the Knight to see its L-jumps. Jump 3 times!', pieces: { d4: 'wN' }, moves: 3 },
+      { type: 'stars', text: 'Jump to the star!', pieces: { b1: 'wN' }, stars: ['c3'] },
+      { type: 'stars', text: 'Two jumps to two stars!', pieces: { g1: 'wN' }, stars: ['f3', 'e5'] },
+      { type: 'stars', text: 'The Knight can jump right over the sleepy pawns!',
+        pieces: { b1: 'wN', a2: 'wP', b2: 'wP', c2: 'wP', d2: 'wP' }, fixed: ['a2', 'b2', 'c2', 'd2'], stars: ['c3', 'e4'] },
+      { type: 'stars', text: 'Hop, hop, hop! Collect all the stars.', pieces: { a1: 'wN' }, stars: ['b3', 'd4', 'b5'] }
+    ] },
+  { id: 'pawn', piece: 'P', icon: '🐣', title: 'Pawn the Little Soldier', sticker: '🐥',
+    story: 'This is the Pawn, a brave little soldier. Pawns march straight FORWARD, one step at a time. On its very first move, a Pawn may take TWO steps. Pawns never walk backwards. And if a Pawn reaches the other side... something magic happens!',
+    puzzles: [
+      { type: 'explore', text: 'Tap the Pawn and march forward 3 times!', pieces: { e2: 'wP' }, moves: 3 },
+      { type: 'stars', text: 'Big first step! A Pawn can jump two squares on its first move.', pieces: { d2: 'wP' }, stars: ['d4'] },
+      { type: 'stars', text: 'Two Pawns, two stars!', pieces: { c2: 'wP', f2: 'wP' }, stars: ['c4', 'f3'] },
+      { type: 'stars', text: 'March the Pawn to the other side... and see what happens! ✨', pieces: { e6: 'wP' }, stars: ['e8'], promoStars: ['a4'] }
+    ] },
+  { id: 'eat', icon: '😋', title: 'Yum! Eating Pieces', sticker: '🦖',
+    story: 'Pieces can EAT pieces from the other team! Just move onto a black piece and CHOMP, it\'s gone. Each piece eats the same way it moves. But Pawns are special: they walk straight, but eat one step DIAGONALLY forward.',
+    puzzles: [
+      { type: 'eat', text: 'Help the Rook eat the black pawn. Chomp!', pieces: { a1: 'wR', a6: 'bP' } },
+      { type: 'eat', text: 'The Bishop is hungry! Eat both black pieces.', pieces: { c1: 'wB', f4: 'bN', h6: 'bP' } },
+      { type: 'eat', text: 'Jump and eat! Help the Knight eat all three.', pieces: { c3: 'wN', e4: 'bP', d6: 'bP', b5: 'bR' } },
+      { type: 'eat', text: 'Pawns walk straight, but eat DIAGONALLY. Eat the wiggly black Knight!',
+        pieces: { e4: 'wP', e5: 'bP', d5: 'bN' }, targets: ['d5'] },
+      { type: 'eat', text: 'Each Pawn can eat one. Gobble up the wiggly pieces!',
+        pieces: { c4: 'wP', f4: 'wP', c5: 'bP', f5: 'bP', d5: 'bN', g5: 'bB' }, targets: ['d5', 'g5'] },
+      { type: 'eat', text: 'Queen\'s feast! Eat ALL the black pieces.', pieces: { d1: 'wQ', d6: 'bP', g6: 'bN', g1: 'bB', a3: 'bR' } }
+    ] },
+  { id: 'safe', icon: '🛡️', title: 'Watch Out!', sticker: '🦔',
+    story: 'Uh-oh! Black pieces can eat YOUR pieces too. Before you move, look around: can a black piece get there? Tip: tap a black piece to see where it can eat.',
+    puzzles: [
+      { type: 'safe', text: 'The black horse wants to eat your Queen! Move her to a SAFE square.', pieces: { d4: 'wQ', f5: 'bN' } },
+      { type: 'safe', text: 'The black Pawn wants to eat your Knight! Jump to a safe square. Careful, the black Rook is watching too!',
+        pieces: { e4: 'wN', d5: 'bP', h6: 'bR' } },
+      { type: 'safe', text: 'Your Rook is in danger! Find a square where nobody can eat it.', pieces: { d4: 'wR', f6: 'bB', b6: 'bN' } }
+    ] },
+  { id: 'check', icon: '⚔️', title: 'Check!', sticker: '🐉',
+    story: 'When a piece attacks the KING, we say "CHECK!" It means: "Watch out, King, I can get you!" Let\'s practice saying check to the black King.',
+    puzzles: [
+      { type: 'check', text: 'Move the Rook to attack the black King. Say "Check!"', pieces: { a1: 'wR', g1: 'wK', e8: 'bK' } },
+      { type: 'check', text: 'Give check with the Bishop!', pieces: { f1: 'wB', e1: 'wK', e8: 'bK' } },
+      { type: 'check', text: 'Give check with the Knight!', pieces: { e4: 'wN', e1: 'wK', e8: 'bK' } },
+      { type: 'check', text: 'Give check with the Queen! There are lots of ways.', pieces: { d1: 'wQ', b1: 'wK', h8: 'bK' } }
+    ] },
+  { id: 'escape', icon: '🛟', title: 'Save the King!', sticker: '🚀',
+    story: 'If YOUR King is in check, you must save him right away! There are three ways: RUN away, EAT the attacker, or BLOCK by putting a friend in the way.',
+    puzzles: [
+      { type: 'escape', text: 'Your King is in check from the black Rook! RUN to a safe square.', pieces: { e1: 'wK', e8: 'bR', a8: 'bK' } },
+      { type: 'escape', text: 'The black Queen came too close! Your King can EAT her!', pieces: { h1: 'wK', g2: 'wP', h2: 'wP', g1: 'bQ', a8: 'bK' } },
+      { type: 'escape', text: 'Your King can\'t run! BLOCK the check by putting a friend in the way.',
+        pieces: { h1: 'wK', g2: 'wP', h2: 'wP', d3: 'wB', e1: 'bR', a8: 'bK' } },
+      { type: 'escape', text: 'Check from the black Bishop! Run, eat, or block: you choose!', pieces: { d1: 'wK', a1: 'wN', b3: 'bB', h8: 'bK' } }
+    ] },
+  { id: 'mate', icon: '🏆', title: 'Checkmate!', sticker: '👑',
+    story: 'CHECKMATE means the King is in check and has NO way out: he can\'t run, nobody can eat the attacker, and nobody can block. Checkmate WINS the game!',
+    puzzles: [
+      { type: 'mate', text: 'The black King is stuck behind his pawns. Checkmate with the Rook!',
+        pieces: { a1: 'wR', g1: 'wK', g8: 'bK', f7: 'bP', g7: 'bP', h7: 'bP' } },
+      { type: 'mate', text: 'Checkmate with the Queen! Your King can help her.', pieces: { a7: 'wQ', g6: 'wK', h8: 'bK' } },
+      { type: 'mate', text: 'Two Rooks climb the ladder. Checkmate!', pieces: { a7: 'wR', h1: 'wR', e1: 'wK', e8: 'bK' } },
+      { type: 'mate', text: 'The Bishop helps the Queen. Checkmate!',
+        pieces: { h6: 'wQ', b2: 'wB', g1: 'wK', g8: 'bK', f7: 'bP', h7: 'bP' } },
+      { type: 'mate', text: 'Sneaky Knight! Find the checkmate.', pieces: { g5: 'wN', a1: 'wK', h8: 'bK', g8: 'bR', g7: 'bP', h7: 'bP' } }
+    ] },
+  { id: 'pawnwars', icon: '🎮', title: 'Game: Pawn Wars', sticker: '🎖️',
+    story: 'Time for a real game! You have 8 white Pawns and the computer has 8 black Pawns. Take turns. The first Pawn to reach the other side WINS! Remember: Pawns walk straight and eat diagonally.',
+    puzzles: [
+      { type: 'pawnwars', text: 'Your turn! Move a white Pawn. Get one to the other side to win!' }
+    ] },
+
+  // ---------- Season 2: Little Champion ----------
+  { id: 'values', season: 2, icon: '💎', title: 'Treasure Points', sticker: '💰',
+    story: 'Every chess piece is worth treasure points! A Pawn is worth 1. A Knight and a Bishop are worth 3. A Rook is worth 5. The Queen is worth 9! The King is so precious that he is never traded. When you can eat, pick the piece worth the MOST.',
+    puzzles: [
+      { type: 'bigeat', values: true, text: 'Your Knight can eat a Pawn or a Rook. Which one is worth more? Eat it!', pieces: { d4: 'wN', c6: 'bP', e6: 'bR' } },
+      { type: 'bigeat', values: true, text: 'The Bishop can eat a Knight or the Queen. Which is the bigger treasure?', pieces: { c1: 'wB', a3: 'bN', g5: 'bQ' } },
+      { type: 'bigeat', values: true, text: 'Rook\'s choice! A Pawn, a Bishop or the Queen?', pieces: { d1: 'wR', d5: 'bP', a1: 'bB', h1: 'bQ' } },
+      { type: 'bigeat', values: true, text: 'Pawns eat diagonally. Should this Pawn eat the Knight or the Rook?', pieces: { e4: 'wP', e5: 'bP', d5: 'bN', f5: 'bR' } },
+      { type: 'bigeat', values: true, text: 'Two hungry friends! Find the biggest treasure on the board.', pieces: { f3: 'wN', b2: 'wB', g5: 'bP', h4: 'bR', f6: 'bQ' } }
+    ] },
+  { id: 'guards', season: 2, icon: '💂', title: 'Guards!', sticker: '🐶',
+    story: 'Black pieces can GUARD each other. If you eat a guarded piece, the guard eats you right back! Before you eat, look: is anyone guarding it? Tap a black piece to see the squares it guards.',
+    puzzles: [
+      { type: 'freeeat', text: 'Two black Pawns. One of them has a guard! Eat the Pawn with NO guard.', pieces: { d4: 'wR', d6: 'bP', e7: 'bP', a4: 'bP' } },
+      { type: 'freeeat', text: 'Which Knight is free to eat? The other one has a Pawn guard.', pieces: { e3: 'wB', c5: 'bN', b6: 'bP', g5: 'bN' } },
+      { type: 'freeeat', text: 'The Queen wants a Rook. One Rook is guarded by a Knight!', pieces: { d1: 'wQ', d7: 'bR', f6: 'bN', a4: 'bR' } },
+      { type: 'freeeat', text: 'Lots of guards! Find the free lunch.', pieces: { e4: 'wN', d6: 'bB', c7: 'bP', f6: 'bR', g7: 'bP', c3: 'bN' } }
+    ] },
+  { id: 'sneaky', season: 2, icon: '🕵️', title: 'Sneaky Attackers', sticker: '🦊',
+    story: 'Some black pieces attack from far, far away! Bishops, Rooks and the Queen can zoom across the whole board. Before you move, follow their lines with your finger.',
+    puzzles: [
+      { type: 'safe', text: 'A Bishop far away is aiming at your Knight! Jump to a safe square.', pieces: { d4: 'wN', a7: 'bB', h5: 'bR' } },
+      { type: 'safe', text: 'The black Rook is looking down the road at your Bishop. Slide somewhere safe!', pieces: { e4: 'wB', e8: 'bR', c7: 'bN', h1: 'bB' } },
+      { type: 'safe', text: 'The black Queen is attacking your Rook from the corner. Find a safe square!', pieces: { d5: 'wR', a8: 'bQ', f7: 'bN', h2: 'bR' } },
+      { type: 'safe', text: 'Two sneaky attackers! Save your Queen.', pieces: { e5: 'wQ', b8: 'bB', e1: 'bR', h8: 'bR', c3: 'bN' } }
+    ] },
+  { id: 'fork', season: 2, icon: '🍴', title: 'Two at Once!', sticker: '🐙',
+    story: 'A FORK is when one piece attacks TWO black pieces at the same time. Black can only save one, so next turn you eat the other! Knights are super at forks.',
+    puzzles: [
+      { type: 'fork', text: 'Jump the Knight to a square that attacks BOTH black Rooks!', pieces: { d4: 'wN', d8: 'bR', g7: 'bR' }, targets: ['d8', 'g7'] },
+      { type: 'fork', text: 'Check the King AND attack the Queen with one jump!', pieces: { b5: 'wN', e1: 'wK', e8: 'bK', a8: 'bQ' }, targets: ['e8', 'a8'] },
+      { type: 'fork', text: 'The Queen can attack the Rook and the Knight from one square. Find it!', pieces: { d1: 'wQ', a7: 'bR', d8: 'bN' }, targets: ['a7', 'd8'] },
+      { type: 'fork', text: 'Even a little Pawn can fork! March it to attack two pieces.', pieces: { d2: 'wP', c5: 'bN', e5: 'bR' }, targets: ['c5', 'e5'] }
+    ] },
+  { id: 'promote', season: 2, icon: '👸', title: 'Make a Queen!', sticker: '🧚',
+    story: 'Remember the Pawn\'s magic? When a Pawn reaches the other side, it becomes a Queen! But black pieces try to stop it. Find a safe road, and never step on a square a black piece is guarding.',
+    puzzles: [
+      { type: 'promote', text: 'Two Pawns want to be a Queen. The black Knight guards a square. Which Pawn can get through?', pieces: { b5: 'wP', g5: 'wP', e5: 'bN' } },
+      { type: 'promote', text: 'A black Pawn blocks the road. Pawns can\'t eat straight ahead, but they CAN eat diagonally!', pieces: { d6: 'wP', d7: 'bP', c7: 'bN' } },
+      { type: 'promote', text: 'Three Pawns race! Which one can sneak past the black Knight?', pieces: { a5: 'wP', e5: 'wP', h5: 'wP', c8: 'bN' } },
+      { type: 'promote', text: 'The black Rook guards the end of the road. Ask your Bishop for help first!', pieces: { g6: 'wP', a6: 'wB', c8: 'bR' } }
+    ] },
+  { id: 'castle', season: 2, icon: '🏯', title: 'The Castle Move', sticker: '🏰',
+    story: 'The King has a secret move called CASTLING! The King steps TWO squares toward a Rook, and the Rook hops over to his other side. Now the King is safe in his castle! You can only castle if the King and that Rook have never moved, nothing is in between, and the King is not in check.',
+    puzzles: [
+      { type: 'castle', text: 'Castle on the short side! Tap the King, then the square two steps toward the Rook.', pieces: { e1: 'wK', h1: 'wR', f2: 'wP', g2: 'wP', h2: 'wP', e8: 'bK' } },
+      { type: 'castle', text: 'Now castle on the long side, toward the other Rook!', pieces: { e1: 'wK', a1: 'wR', a2: 'wP', b2: 'wP', c2: 'wP', e8: 'bK' } },
+      { type: 'castle', text: 'Friends are in the way! Move them out, then castle.', pieces: { e1: 'wK', h1: 'wR', f1: 'wB', g1: 'wN', f2: 'wP', g2: 'wP', h2: 'wP', e8: 'bK' } },
+      { type: 'castle', text: 'A black Bishop is watching one side. Castle on the safe side!',
+        pieces: { e1: 'wK', a1: 'wR', h1: 'wR', a2: 'wP', b2: 'wP', c2: 'wP', g2: 'wP', h2: 'wP', c4: 'bB', e8: 'bK' } }
+    ] },
+  { id: 'enpassant', season: 2, icon: '🥷', title: 'En Passant!', sticker: '🐸',
+    story: 'Pawns have one more secret trick, called EN PASSANT. You say it "on pah-SAHN", and it means "in passing". When a black Pawn jumps TWO squares and lands right beside your Pawn, your Pawn can eat it as if it had moved only one step: it moves diagonally to the square the black Pawn jumped over. But you must do it right away, on your very next move!',
+    puzzles: [
+      { type: 'enpassant', text: 'The black Pawn jumped two squares and landed beside your Pawn! Eat it in passing: move diagonally behind it.', pieces: { e5: 'wP', d7: 'bP' }, last: ['d7', 'd5'] },
+      { type: 'enpassant', text: 'It happened again, on the other side! Catch the jumping Pawn.', pieces: { d5: 'wP', e7: 'bP' }, last: ['e7', 'e5'] },
+      { type: 'enpassant', text: 'Only one of your Pawns is standing beside the jumper. Use the trick to eat the Pawn that just jumped!', pieces: { b5: 'wP', g4: 'wP', a7: 'bP', h5: 'bP' }, last: ['a7', 'a5'] },
+      { type: 'enpassant', text: 'En passant with CHECK! Eat the jumping Pawn, and your Pawn will attack the King too.', pieces: { e5: 'wP', e1: 'wK', d7: 'bP', e7: 'bK' }, last: ['d7', 'd5'] }
+    ] },
+  { id: 'tie', season: 2, icon: '🤝', title: 'Oops, a Tie!', sticker: '🐢',
+    story: 'Here is a tricky rule. If it is black\'s turn and black has NO moves, but the black King is NOT in check, the game is a TIE. It is called stalemate. When you are winning, don\'t trap the King without saying check!',
+    puzzles: [
+      { type: 'stalemate', text: 'Let\'s make a tie on purpose! Trap the black King so he can\'t move, but DON\'T say check.', pieces: { f7: 'wK', a6: 'wQ', h8: 'bK' } },
+      { type: 'mate', text: 'Now win! Checkmate the black King, and watch out for the tie trap.', pieces: { g6: 'wK', c7: 'wQ', h8: 'bK' } },
+      { type: 'mate', text: 'Checkmate in the corner! The tie trap is hiding here too.', pieces: { c7: 'wK', b1: 'wQ', a8: 'bK' } },
+      { type: 'mate', text: 'Rook and King team! Checkmate, but don\'t make a tie.', pieces: { g6: 'wK', d7: 'wR', h8: 'bK' } }
+    ] },
+  { id: 'mateclub', season: 2, icon: '🏅', title: 'Checkmate Club', sticker: '🥇',
+    story: 'Welcome to the Checkmate Club! These checkmates are trickier: black has helpers that try to block or eat your piece. Look for the move where nobody can save the King.',
+    puzzles: [
+      { type: 'mate', text: 'The Rook and the Knight are a team. Checkmate!', pieces: { a7: 'wR', f6: 'wN', a1: 'wK', h8: 'bK' } },
+      { type: 'mate', text: 'The black Rook wants to help, but its friend is in the way. Checkmate on the back row!',
+        pieces: { e1: 'wR', g1: 'wK', f2: 'wP', g2: 'wP', h2: 'wP', g8: 'bK', f7: 'bP', g7: 'bP', h7: 'bP', a8: 'bR', c8: 'bN' } },
+      { type: 'mate', text: 'The Queen and the Knight team up. Find the checkmate!', pieces: { h5: 'wQ', g5: 'wN', a1: 'wK', h8: 'bK', g7: 'bP', h7: 'bP', f8: 'bR' } },
+      { type: 'mate', text: 'Two Bishops! One guards a square, the other says checkmate.', pieces: { f4: 'wB', c4: 'wB', c1: 'wK', h8: 'bK', h7: 'bP' } }
+    ] },
+  { id: 'mate2', season: 2, icon: '🧩', title: 'Two-Step Checkmate', sticker: '🧠',
+    story: 'Super challenge! Sometimes checkmate takes TWO moves. First make a clever move. Then black moves. Then... CHECKMATE! Thinking ahead is what champions do.',
+    puzzles: [
+      { type: 'mate2', text: 'Two Rooks climb the ladder! First close the King\'s door, then checkmate.', pieces: { a6: 'wR', b5: 'wR', e1: 'wK', h8: 'bK' } },
+      { type: 'mate2', text: 'The black Rook guards the back row. Can your two Rooks win it?',
+        pieces: { g1: 'wK', f2: 'wP', g2: 'wP', h2: 'wP', d1: 'wR', d2: 'wR', g8: 'bK', f7: 'bP', g7: 'bP', h7: 'bP', c8: 'bR' } },
+      { type: 'mate2', text: 'The Queen needs her King to help. Bring the King closer first!', pieces: { e5: 'wK', g5: 'wQ', h8: 'bK' } },
+      { type: 'mate2', text: 'Rook and King: one quiet King step, then checkmate!', pieces: { f5: 'wK', a1: 'wR', h8: 'bK' } }
+    ] },
+  { id: 'kingwars', season: 2, icon: '🕹️', title: 'Game: Kings & Pawns', sticker: '🏆',
+    story: 'A bigger game! Each side has 8 Pawns AND a King. Get a Pawn to the other side to make a Queen, or checkmate the black King, and you win! Remember: a King can never step into check, and Pawns can eat en passant.',
+    puzzles: [
+      { type: 'pawnwars', kings: true, enPassant: true, text: 'Your turn! Move a Pawn or your King. Make a Queen or checkmate to win!' }
+    ] }
+];
+</script>
+<script id="ui">
+// App: screens, board UI, voice, rewards, progress and the Pawn Wars opponent.
+(function () {
+  'use strict';
+  var C = Chess;
+  var app = document.getElementById('app');
+  var FILES = 'abcdefgh';
+  var VS15 = '\uFE0E'; // keep chess glyphs as text, not emoji
+  var GLYPH = { K: '\u265A', Q: '\u265B', R: '\u265C', B: '\u265D', N: '\u265E', P: '\u265F' };
+  var PNAME = { K: 'King', Q: 'Queen', R: 'Rook', B: 'Bishop', N: 'Knight', P: 'Pawn' };
+  var HELLO = {
+    K: 'Hi, I\'m the King! I\'m the most important piece. I walk one step at a time.',
+    Q: 'Hi, I\'m the Queen! I\'m the strongest. I zoom in straight lines AND diagonals.',
+    R: 'Hi, I\'m the Rook! I look like a castle tower. I go in straight lines.',
+    B: 'Hi, I\'m the Bishop! I wear a pointy hat and slide on diagonals.',
+    N: 'Hi, I\'m the Knight! I\'m a horse, and I jump in an L shape.',
+    P: 'Hi, I\'m the Pawn! I\'m a brave little soldier. I march forward.'
+  };
+  var PRAISE = ['Hooray!', 'You did it!', 'Super!', 'Amazing!', 'Great job!', 'Fantastic!', 'Wow, well done!'];
+  var CHEERS = ['🎉', '🌟', '🥳', '👏', '🏅', '🎈'];
+  var CONFETTI = ['⭐', '🎉', '🎈', '✨', '💛', '💚', '💙', '🧡', '💜'];
+  var ONE_MOVE = { safe: 1, check: 1, escape: 1, mate: 1, bigeat: 1, freeeat: 1, fork: 1, stalemate: 1, mate2: 1, enpassant: 1 };
+  var GUIDE = {
+    board: ['The board has 64 light and dark squares. The light square goes in the right-hand corner. Meet the six pieces.', 'Set up a real board together and check: "light on the right!"'],
+    rook: ['The Rook moves in straight lines, as far as it likes, and can\'t jump.', 'Rook race: put a Rook in each corner and race to the far side.'],
+    bishop: ['The Bishop moves on diagonals and stays on one color forever.', 'Put a Bishop on a light square. Can it ever reach a dark one?'],
+    queen: ['The Queen moves like a Rook and a Bishop together.', 'Count the squares a Queen reaches from the middle (27!).'],
+    king: ['The King walks one step in any direction.', 'King walk: take the King across the board, one step at a time.'],
+    knight: ['The Knight moves in an L and is the only piece that jumps.', 'Say "one, two, turn!" out loud with each jump.'],
+    pawn: ['Pawns move forward one square, or two on their first move. At the far side they become a Queen.', 'March a pawn across the board and swap it for a Queen.'],
+    eat: ['Pieces capture the way they move. Pawns capture one square diagonally forward.', 'Set out 3 or 4 pieces and ask "who can eat who?"'],
+    safe: ['Before moving, check if an enemy piece can capture there.', 'Before each move, ask: "Is it safe there?"'],
+    check: ['Check means the King is attacked.', 'Say "Check!" together every time.'],
+    escape: ['Three ways out of check: run, eat the attacker, or block.', 'Use the three words: run, eat, block.'],
+    mate: ['Checkmate: in check with no way out. It wins the game.', 'Celebrate! Then set up the position again and let them show you.'],
+    pawnwars: ['A full game with pawns only. The first pawn to reach the far side wins.', 'Play Pawn Wars on a real board, then add one more piece each.'],
+    values: ['Piece values: Pawn 1, Knight 3, Bishop 3, Rook 5, Queen 9. Take the most valuable piece.', 'Hold up two captured pieces: "Which is worth more?"'],
+    guards: ['A guarded piece can be taken back. Only take pieces nobody guards.', 'Before each capture, ask: "Who guards it?"'],
+    sneaky: ['Bishops, Rooks and Queens attack from far away along lines.', 'Trace the lines from each enemy piece with a finger.'],
+    fork: ['A fork attacks two pieces at once; the opponent can only save one.', 'Set up two enemy Rooks and hunt for the Knight square that hits both.'],
+    promote: ['Promotion, safely: march only onto squares no enemy piece guards.', 'Race a pawn across the board while you "guard" squares with your pieces.'],
+    enpassant: ['En passant: right after an enemy pawn jumps two squares to land beside your pawn, take it as if it had moved one. Only on the very next move.', 'Play the two-square jump yourself on a real board and let your child catch it.'],
+    castle: ['Castling: King two squares toward a Rook, Rook hops over. Not out of check, not through attacked squares, not after they moved.', 'Castle in every real game you play together.'],
+    tie: ['Stalemate: no legal moves and not in check is a draw. Avoid it when winning.', 'Set up King and Queen vs King and look for the tie trap together.'],
+    mateclub: ['Mate in 1 with defenders: blockers, guards and team mates (Rook + Knight, two Bishops).', 'Ask: "Can black block, capture, or run?"'],
+    mate2: ['Mate in 2: a quiet or sacrificing move first, then checkmate whatever black does.', 'Play black and let your child find the mate after your reply.'],
+    kingwars: ['Pawn Wars with Kings: make a Queen or checkmate to win. Kings help their pawns.', 'Play it on a real board; it is a full chess game in miniature.']
+  };
+
+  var OLLIE = '<svg class="ollie" viewBox="0 0 120 130" width="1em" height="1.08em" aria-hidden="true">' +
+    '<path d="M31 36 L21 5 L52 25 Z M89 36 L99 5 L68 25 Z" fill="#6f4a2e"/>' +
+    '<ellipse cx="60" cy="74" rx="46" ry="52" fill="#9b6a43"/>' +
+    '<path d="M16 64 C3 88 9 109 29 119 C26 98 26 82 31 67 Z M104 64 C117 88 111 109 91 119 C94 98 94 82 89 67 Z" fill="#6f4a2e"/>' +
+    '<ellipse cx="60" cy="93" rx="29" ry="29" fill="#f3d9a4"/>' +
+    '<path d="M42 86 q5 6 10 0 M55 86 q5 6 10 0 M68 86 q5 6 10 0 M48 98 q5 6 10 0 M61 98 q5 6 10 0 M54 110 q5 6 10 0" stroke="#d6ad6c" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="42" cy="50" r="20" fill="#f7e7c4"/><circle cx="78" cy="50" r="20" fill="#f7e7c4"/>' +
+    '<circle cx="42" cy="50" r="13.5" fill="#fff"/><circle cx="78" cy="50" r="13.5" fill="#fff"/>' +
+    '<circle cx="43.5" cy="51.5" r="7.5" fill="#2b2222"/><circle cx="79.5" cy="51.5" r="7.5" fill="#2b2222"/>' +
+    '<circle cx="46.5" cy="48.5" r="2.6" fill="#fff"/><circle cx="82.5" cy="48.5" r="2.6" fill="#fff"/>' +
+    '<path d="M52 63 Q60 58 68 63 L60 76 Z" fill="#ff9f1c"/>' +
+    '<g fill="#ff9f1c"><circle cx="45" cy="124" r="4.5"/><circle cx="51" cy="126" r="4.5"/><circle cx="57" cy="124" r="4.5"/>' +
+    '<circle cx="63" cy="124" r="4.5"/><circle cx="69" cy="126" r="4.5"/><circle cx="75" cy="124" r="4.5"/></g></svg>';
+
+  // ---------- saved progress ----------
+  var KEY = 'chessAdventure.v1';
+  var APP_VERSION = (document.querySelector('meta[name="app-version"]') || {}).content || 'dev';
+  var DEFAULT_SETTINGS = { sound: true, voice: true, sfx: true, rate: 0.9, coords: true, unlockAll: false, ai: 'gentle' };
+  var state = (function load() {
+    var d = { stars: {}, stickers: {}, wins: 0, games: 0, settings: Object.assign({}, DEFAULT_SETTINGS) };
+    try {
+      var s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (s) {
+        d.stars = s.stars || {}; d.stickers = s.stickers || {};
+        d.wins = s.wins || 0; d.games = s.games || 0;
+        d.settings = Object.assign(d.settings, s.settings || {});
+      }
+    } catch (e) { /* private mode or bad data: start fresh */ }
+    return d;
+  })();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+
+  // ---------- helpers ----------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function $(id) { return document.getElementById(id); }
+  function on(id, fn) { var el = $(id); if (el) el.addEventListener('click', fn); }
+  function pieceHTML(p, cls) { return '<span class="piece ' + p[0] + (cls ? ' ' + cls : '') + '">' + GLYPH[p[1]] + VS15 + '</span>'; }
+  function chIcon(ch) { return ch.piece ? pieceHTML('w' + ch.piece) : ch.icon; }
+  function chStars(ci) { return state.stars[CHAPTERS[ci].id] || []; }
+  function puzzleDone(ci, pi) { return (chStars(ci)[pi] || 0) > 0; }
+  function chapterDone(ci) { return CHAPTERS[ci].puzzles.every(function (p, pi) { return puzzleDone(ci, pi); }); }
+  function unlocked(ci) { return ci === 0 || state.settings.unlockAll || chapterDone(ci - 1) || chapterDone(ci); }
+  function puzzleOpen(ci, pi) { return pi === 0 || state.settings.unlockAll || puzzleDone(ci, pi) || puzzleDone(ci, pi - 1); }
+  function firstUndone(ci) { var n = CHAPTERS[ci].puzzles.length; for (var i = 0; i < n; i++) if (!puzzleDone(ci, i)) return i; return 0; }
+  function nextChapter() { for (var i = 0; i < CHAPTERS.length; i++) if (!chapterDone(i)) return unlocked(i) ? i : -1; return -1; }
+  function stickerCount() { return CHAPTERS.filter(function (ch) { return state.stickers[ch.id]; }).length; }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  function seasonOf(ci) { return CHAPTERS[ci].season || 1; }
+  function seasonChapters(n) { var out = []; CHAPTERS.forEach(function (ch, ci) { if ((ch.season || 1) === n) out.push(ci); }); return out; }
+  function seasonInfo(n) { return SEASONS.filter(function (x) { return x.n === n; })[0]; }
+  function seasonOpen(n) { var first = seasonChapters(n)[0]; return first != null && unlocked(first); }
+  function seasonDone(n) { return seasonChapters(n).every(chapterDone); }
+  var homeSeason = null; // season tab shown on the home screen; null = the season of the next adventure
+  function sqName(i) { return C.name(i); }
+
+  // ---------- sound ----------
+  var actx = null;
+  function audio() {
+    if (!actx) { var A = window.AudioContext || window.webkitAudioContext; if (A) actx = new A(); }
+    if (actx && actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+  function tone(f, t0, dur, type, vol) {
+    var a = audio(); if (!a) return;
+    var t = a.currentTime + t0, o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+  }
+  var SFX = {
+    tap: function () { tone(660, 0, 0.08, 'sine', 0.1); },
+    move: function () { tone(520, 0, 0.09, 'triangle'); tone(780, 0.06, 0.1, 'triangle'); },
+    star: function () { tone(880, 0, 0.12); tone(1320, 0.09, 0.2); },
+    chomp: function () { tone(190, 0, 0.12, 'square', 0.1); tone(130, 0.1, 0.16, 'square', 0.1); },
+    oops: function () { tone(420, 0, 0.14, 'sawtooth', 0.06); tone(300, 0.13, 0.22, 'sawtooth', 0.06); },
+    check: function () { tone(740, 0, 0.12, 'square', 0.08); tone(740, 0.16, 0.12, 'square', 0.08); },
+    win: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, i * 0.11, 0.28, 'triangle', 0.15); }); }
+  };
+  function sfx(n) { if (state.settings.sound && state.settings.sfx && SFX[n]) { try { SFX[n](); } catch (e) { /* no audio */ } } }
+
+  var voice = null;
+  function pickVoice() {
+    if (!('speechSynthesis' in window)) return;
+    var vs = speechSynthesis.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    var prefs = [/Ava/i, /Samantha/i, /Jenny/i, /Aria/i, /Google US English/i, /female/i, /Karen|Moira|Tessa|Serena|Allison|Susan/i];
+    voice = null;
+    for (var i = 0; i < prefs.length && !voice; i++) voice = vs.find(function (v) { return prefs[i].test(v.name); }) || null;
+    if (!voice) voice = vs.find(function (v) { return /en[-_]US/i.test(v.lang); }) || vs[0] || null;
+  }
+  if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function speakable(t) {
+    return t.replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0E}\u{FE0F}\u{200D}]/gu, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    if (!state.settings.sound || !state.settings.voice) return;
+    var t = speakable(text); if (!t) return;
+    var u = new SpeechSynthesisUtterance(t);
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-US';
+    u.rate = +state.settings.rate || 0.9; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  }
+  function stopVoice() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopVoice(); });
+
+  // ---------- effects ----------
+  function confetti(n) {
+    for (var k = 0; k < n; k++) {
+      var c = document.createElement('div');
+      c.className = 'confetti';
+      c.textContent = pick(CONFETTI);
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.fontSize = (18 + Math.random() * 24) + 'px';
+      c.style.animationDuration = (2.2 + Math.random() * 2.2) + 's';
+      c.style.animationDelay = (Math.random() * 0.7) + 's';
+      document.body.appendChild(c);
+      setTimeout(c.remove.bind(c), 5600);
+    }
+  }
+  function sqPos(i) { return { x: (i % 8) * 12.5, y: (7 - (i >> 3)) * 12.5 }; }
+  function floater(i, text, color) {
+    var fx = $('fx'); if (!fx) return;
+    var a = sqPos(i), d = document.createElement('div');
+    d.className = 'floater';
+    d.style.left = Math.min(88, Math.max(12, a.x + 6.25)) + '%';
+    d.style.top = (a.y + 6.25) + '%';
+    d.style.color = color || '#ff6b00';
+    d.textContent = text;
+    fx.appendChild(d);
+    setTimeout(d.remove.bind(d), 1100);
+  }
+  function closeModal() { var o = document.querySelector('.overlay'); if (o) o.remove(); }
+  function modal(html) {
+    closeModal();
+    var o = document.createElement('div');
+    o.className = 'overlay';
+    o.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+    document.body.appendChild(o);
+    return o;
+  }
+
+  // ---------- header ----------
+  function setSoundBtn() { $('hSound').textContent = state.settings.sound ? '🔊' : '🔇'; }
+  on('hHome', function () { audio(); renderHome(); });
+  on('hStick', function () { audio(); renderStickers(); });
+  on('hGuide', function () { audio(); renderGuide(); });
+  on('hSound', function () {
+    state.settings.sound = !state.settings.sound; save(); setSoundBtn();
+    if (state.settings.sound) { audio(); sfx('tap'); speak('Sound is on!'); } else stopVoice();
+  });
+  setSoundBtn();
+
+  function leave() {
+    closeModal(); stopVoice();
+    document.querySelectorAll('.confetti').forEach(function (c) { c.remove(); });
+    if (P) { P.dead = true; P.timers.forEach(clearTimeout); }
+    P = null;
+    window.scrollTo(0, 0);
+  }
+  // Run fn later, but only if the same puzzle is still on screen.
+  function later(fn, ms) {
+    var me = P, id = setTimeout(function () { if (P === me && !me.dead) fn(); }, ms);
+    if (me) me.timers.push(id);
+    return id;
+  }
+
+  // ---------- home ----------
+  function renderHome() {
+    leave();
+    var next = nextChapter(), have = stickerCount();
+    var season = homeSeason || (next >= 0 ? seasonOf(next) : SEASONS[SEASONS.length - 1].n);
+    var msg;
+    if (next < 0 && have === CHAPTERS.length) msg = 'WOW! You finished every adventure. You are a chess champion! 🏆';
+    else if (!have && !Object.keys(state.stars).length) msg = 'Hi! I\'m Ollie the Owl. Let\'s learn chess together! Tap the first adventure to start.';
+    else if (next >= 0 && seasonOf(next) > 1 && seasonChapters(seasonOf(next))[0] === next && !chStars(next).length) {
+      msg = 'Hooray, you finished ' + seasonInfo(seasonOf(next) - 1).title.split(':')[0] + '! ' + seasonInfo(seasonOf(next)).title + ' is open. Let\'s go!';
+    }
+    else msg = 'Welcome back! You have ' + plural(have, 'sticker') + '. ' + (next >= 0 ? 'Next up: ' + CHAPTERS[next].title + '!' : 'Pick an adventure!');
+    var tabs = '<div class="seasons" role="tablist">' + SEASONS.map(function (x) {
+      var list = seasonChapters(x.n), open = seasonOpen(x.n);
+      var got = list.filter(function (ci) { return state.stickers[CHAPTERS[ci].id]; }).length;
+      return '<button class="season' + (x.n === season ? ' on' : '') + (open ? '' : ' locked') + '" data-season="' + x.n + '" role="tab" aria-selected="' +
+        (x.n === season) + '">' + x.icon + ' ' + esc(x.title) + ' <span class="cnt">' + (open ? got + '/' + list.length : '🔒') + '</span></button>';
+    }).join('') + '</div>';
+    var cards = seasonChapters(season).map(function (ci) {
+      var ch = CHAPTERS[ci];
+      var lock = !unlocked(ci), done = chapterDone(ci), st = chStars(ci);
+      var pips = ch.puzzles.map(function (p, pi) { return '<span class="pip' + (st[pi] ? ' on' : '') + '"></span>'; }).join('');
+      var badge = lock ? '🔒' : done ? ch.sticker : ci === next ? '✨' : '';
+      return '<div class="card' + (lock ? ' locked' : '') + '" data-ci="' + ci + '" role="button" tabindex="0" aria-label="' +
+        esc(ch.title + (lock ? ' (locked)' : done ? ' (done)' : '')) + '">' +
+        (badge ? '<span class="badge">' + badge + '</span>' : '') +
+        '<div class="ic">' + chIcon(ch) + '</div><div class="t">' + esc(ch.title) + '</div><div class="pips">' + pips + '</div></div>';
+    }).join('');
+    app.innerHTML = '<div class="hello"><div class="owl" id="owl" title="Ollie the Owl">' + OLLIE + '</div>' +
+      '<div class="speech" id="say">' + esc(msg) + '</div></div>' + tabs + '<div class="grid">' + cards + '</div>';
+    on('owl', function () { speak(msg); });
+    app.querySelectorAll('.season').forEach(function (el) {
+      el.addEventListener('click', function () {
+        audio();
+        var n = +el.dataset.season;
+        if (!seasonOpen(n)) {
+          el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+          sfx('oops');
+          var t = 'Finish ' + seasonInfo(n - 1).title.split(':')[0] + ' to open ' + seasonInfo(n).title.split(':')[0] + '!';
+          $('say').textContent = t; speak(t);
+          return;
+        }
+        sfx('tap'); homeSeason = n; renderHome();
+      });
+    });
+    app.querySelectorAll('.card').forEach(function (el) {
+      function go() {
+        audio();
+        var ci = +el.dataset.ci;
+        if (!unlocked(ci)) {
+          el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+          sfx('oops');
+          var t = 'Finish "' + CHAPTERS[ci - 1].title + '" first, then this one opens!';
+          $('say').textContent = t; speak(t);
+          return;
+        }
+        sfx('tap');
+        renderStory(ci);
+      }
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+
+  // ---------- story ----------
+  function renderStory(ci) {
+    leave();
+    var ch = CHAPTERS[ci];
+    app.innerHTML = '<div class="story"><div class="hero">' + chIcon(ch) + '</div><h2>' + esc(ch.title) + '</h2>' +
+      '<p>' + esc(ch.story) + '</p><div class="row"><button class="btn" id="sRead">🔊 Read to me</button>' +
+      '<button class="btn primary" id="sGo">Let\'s go! ➡️</button></div></div>';
+    var text = ch.title + '. ' + ch.story;
+    on('sRead', function () { speak(text); });
+    on('sGo', function () { sfx('tap'); startPuzzle(ci, firstUndone(ci)); });
+    speak(text);
+  }
+
+  // ---------- puzzle ----------
+  var P = null;
+  var parCache = {};
+
+  function threatened(b) {
+    var out = [];
+    b.forEach(function (pc, sq) { if (pc && pc[0] === 'w' && C.isAttacked(b, sq, 'b')) out.push(sq); });
+    return out;
+  }
+  function eatDone(b, pz) {
+    if (pz.targets) return pz.targets.map(C.idx).every(function (t) { return !b[t] || b[t][0] !== 'b'; });
+    return !b.some(function (pc) { return pc && pc[0] === 'b'; });
+  }
+  function pawnWarsStart(kings) {
+    var m = {};
+    for (var f = 0; f < 8; f++) { m[FILES[f] + '2'] = 'wP'; m[FILES[f] + '7'] = 'bP'; }
+    if (kings) { m.e1 = 'wK'; m.e8 = 'bK'; }
+    return C.fromMap(m);
+  }
+  // Season 2 multi-move puzzles: every white move must land safely; castle puzzles keep castling possible.
+  function promoteSearch(b) {
+    return C.search(b, {
+      allow: function (bb, m, nb) { return C.safeLanding(bb, m, nb); },
+      goal: function (nb, m, bb) { return bb[m.from][1] === 'P' && nb[m.to][1] === 'Q' && C.safeLanding(bb, m, nb); }
+    });
+  }
+  function castleSearch(b, rights) {
+    return C.search(b, { rights: rights, allow: function (bb, m) { return C.keepsCastle(rights, bb, m); }, goal: function (nb, m) { return !!m.castle; } });
+  }
+
+  function startPuzzle(ci, pi) {
+    leave();
+    var ch = CHAPTERS[ci], pz = ch.puzzles[pi];
+    P = {
+      ci: ci, pi: pi, ch: ch, pz: pz, type: pz.type,
+      board: pz.type === 'pawnwars' ? pawnWarsStart(pz.kings) : C.fromMap(pz.pieces || {}),
+      stars: (pz.stars || []).map(C.idx), promoDone: false, fixed: (pz.fixed || []).map(C.idx),
+      moves: 0, hints: 0, fails: 0, history: [], sel: null, last: null, popAt: null,
+      danger: [], blue: [], hint: null, hintMove: null, met: {}, busy: false, done: false, turn: 'w', msg: '', timers: [],
+      rights: pz.type === 'castle' ? C.startRights(C.fromMap(pz.pieces || {})) : null, phase: 0, quiet: 0,
+      ep: -1, useEp: pz.type === 'enpassant' || !!pz.enPassant
+    };
+    if (pz.type === 'promote' || pz.type === 'castle') {
+      var k2 = ch.id + '#' + pi;
+      if (!(k2 in parCache)) { var r2 = pz.type === 'promote' ? promoteSearch(P.board) : castleSearch(P.board, P.rights); parCache[k2] = r2 ? r2.len : null; }
+      P.par = parCache[k2];
+    }
+    if (pz.type === 'bigeat') P.best = C.bestCapture(P.board, 'w');
+    if (pz.type === 'stars' || pz.type === 'eat') {
+      var key = ch.id + '#' + pi;
+      if (!(key in parCache)) { var r = C.solve(pz, P.board, P.stars, false); parCache[key] = r ? r.len : null; }
+      P.par = parCache[key];
+    }
+    if (pz.type === 'safe') P.danger = threatened(P.board);
+    if (pz.type === 'escape') P.danger = [C.kingSq(P.board, 'w')];
+
+    var dots = ch.puzzles.map(function (p, j) {
+      return '<button data-pi="' + j + '" class="' + (puzzleDone(ci, j) ? 'done' : '') + (j === pi ? ' cur' : '') + '"' +
+        (puzzleOpen(ci, j) ? '' : ' disabled') + ' aria-label="Puzzle ' + (j + 1) + '">' + (j + 1) + '</button>';
+    }).join('');
+    var undo = ['stars', 'eat', 'explore', 'pawnwars', 'promote', 'castle'].indexOf(P.type) >= 0;
+    app.innerHTML =
+      '<div class="topline"><div class="chap" id="pChap" role="button" title="Read the story again">' + chIcon(ch) + ' ' + esc(ch.title) + '</div>' +
+      '<div class="dots">' + dots + '</div></div>' +
+      '<div class="bubble"><div class="owl" id="pOwl" title="Tap Ollie to hear it again">' + OLLIE + '</div><div class="msg" id="pMsg" aria-live="polite"></div></div>' +
+      '<div class="boardwrap"><div class="board" id="board" role="grid" aria-label="Chess board"></div><div class="fx" id="fx"></div></div>' +
+      '<div class="controls"><button class="btn" id="cHint">💡 Hint</button>' +
+      (undo ? '<button class="btn" id="cUndo">↩️ Undo</button>' : '') +
+      '<button class="btn" id="cReset">🔄 ' + (P.type === 'pawnwars' ? 'New game' : 'Start over') + '</button>' +
+      '<span class="info" id="cInfo"></span></div>';
+    app.querySelectorAll('.dots button').forEach(function (b) {
+      b.addEventListener('click', function () { sfx('tap'); startPuzzle(ci, +b.dataset.pi); });
+    });
+    on('pChap', function () { renderStory(ci); });
+    on('pOwl', function () { speak(P.msg); });
+    on('cHint', hint);
+    on('cUndo', undoMove);
+    on('cReset', function () { sfx('tap'); startPuzzle(ci, pi); });
+    bindBoard();
+    drawBoard();
+    if (pz.type === 'enpassant') return blackJump();
+    say(pz.text);
+  }
+
+  // En passant puzzles start with black's two-square jump, so the child sees it happen.
+  function blackJump() {
+    var from = C.idx(P.pz.last[0]), to = C.idx(P.pz.last[1]);
+    P.busy = true;
+    say('Watch the black Pawn…', true);
+    later(function () {
+      var b = P.board, m = { from: from, to: to };
+      animate(from, to, b[from], function () {
+        P.ep = C.epSquare(b, m);
+        P.board = C.makeMove(b, m); P.last = m; P.popAt = to; P.busy = false;
+        sfx('move'); drawBoard(); floater(to, 'Jump!', '#2a7de1');
+        say(P.pz.text);
+      });
+    }, 900);
+  }
+
+  function say(text, quiet) {
+    if (!P) return;
+    P.msg = text;
+    var m = $('pMsg'); if (m) m.textContent = text;
+    if (!quiet) speak(text);
+  }
+
+  function movesFrom(sq) {
+    var b = P.board, p = b[sq];
+    if (!p || p[0] !== 'w' || P.fixed.indexOf(sq) >= 0) return [];
+    var hasKing = b.indexOf('wK') >= 0;
+    var ms = C.pseudoMoves(b, sq).filter(function (m) { return !hasKing || C.isLegal(b, m); });
+    if (P.rights && p[1] === 'K') ms = ms.concat(C.castleMoves(b, 'w', P.rights));
+    if (P.ep >= 0 && p[1] === 'P') ms = ms.concat(C.epMoves(b, 'w', P.ep).filter(function (m) { return m.from === sq; }));
+    return ms;
+  }
+  function allMoves() {
+    var out = [];
+    for (var i = 0; i < 64; i++) out = out.concat(movesFrom(i));
+    return out;
+  }
+
+  function wiggles(i) {
+    var p = P.board[i];
+    if (!p) return false;
+    if (P.type === 'meet') return !P.met[i];
+    if ((P.type === 'eat' || P.type === 'fork') && P.pz.targets) return p[0] === 'b' && P.pz.targets.map(C.idx).indexOf(i) >= 0;
+    if (P.type === 'explore') return p[0] === 'w' && P.moves === 0 && P.sel == null;
+    if (P.type === 'enpassant') return P.ep >= 0 && C.epMoves(P.board, 'w', P.ep).some(function (m) { return m.ep === i; });
+    return false;
+  }
+
+  function drawBoard() {
+    var b = P.board, dots = {}, rings = {}, html = '';
+    if (P.sel != null) movesFrom(P.sel).forEach(function (m) { if (b[m.to]) rings[m.to] = 1; else dots[m.to] = (m.castle || m.ep != null) ? 'special' : 1; });
+    for (var r = 7; r >= 0; r--) {
+      for (var f = 0; f < 8; f++) {
+        var i = r * 8 + f, p = b[i], cls = 'sq ' + (C.isLight(i) ? 'l' : 'd'), inner = '';
+        if (P.last && (P.last.from === i || P.last.to === i)) cls += ' last';
+        if (P.sel === i) cls += ' sel';
+        if (P.danger.indexOf(i) >= 0) cls += ' danger';
+        if (P.blue.indexOf(i) >= 0) cls += ' esc';
+        if (P.hint === i) cls += ' hint';
+        if (state.settings.coords) {
+          if (r === 0) inner += '<span class="coord f">' + FILES[f] + '</span>';
+          if (f === 0) inner += '<span class="coord r">' + (r + 1) + '</span>';
+        }
+        if (!p && P.stars.indexOf(i) >= 0) inner += '<span class="star">⭐</span>';
+        if (p) {
+          inner += pieceHTML(p, [P.popAt === i ? 'pop' : '', wiggles(i) ? 'wiggle' : ''].join(' ').trim());
+          if (P.fixed.indexOf(i) >= 0) inner += '<span class="zz">💤</span>';
+          if (P.pz.values && p[1] !== 'K') inner += '<span class="val">' + C.VALUE[p[1]] + '</span>';
+        }
+        if (dots[i]) inner += '<span class="dot' + (dots[i] === 'special' ? ' special' : '') + '"></span>';
+        if (rings[i]) inner += '<span class="ring"></span>';
+        var label = sqName(i) + (p ? ', ' + (p[0] === 'w' ? 'white ' : 'black ') + PNAME[p[1]] : '') + (P.stars.indexOf(i) >= 0 ? ', star' : '');
+        html += '<div class="' + cls + '" data-i="' + i + '" role="gridcell" aria-label="' + label + '">' + inner + '</div>';
+      }
+    }
+    $('board').innerHTML = html;
+    P.popAt = null;
+    updateInfo();
+  }
+
+  function updateInfo() {
+    var el = $('cInfo'); if (!el) return;
+    var t = '';
+    switch (P.type) {
+      case 'tap': case 'stars': t = P.stars.length ? 'Stars left: ' + '⭐'.repeat(P.stars.length) : ''; break;
+      case 'meet': t = 'Said hello: ' + Object.keys(P.met).length + ' / ' + P.board.filter(Boolean).length; break;
+      case 'explore': t = 'Moves: ' + Math.min(P.moves, P.pz.moves) + ' / ' + P.pz.moves; break;
+      case 'eat': case 'promote': case 'castle': t = 'Moves: ' + P.moves; break;
+      case 'mate2': t = P.done ? '' : 'Step ' + (P.phase + 1) + ' of 2'; break;
+      case 'pawnwars': t = P.done ? '' : P.turn === 'w' ? 'Your turn!' : 'Thinking…'; if (state.wins) t += ' 🏆 ' + state.wins; break;
+    }
+    el.textContent = t;
+    var u = $('cUndo'); if (u) u.disabled = !P.history.length || P.busy || P.done;
+  }
+
+  // Tap, or press-and-drag, to move.
+  var drag = null;
+  function bindBoard() {
+    var board = $('board');
+    board.addEventListener('pointerdown', function (e) {
+      var el = e.target.closest('.sq'); if (!el || !P) return;
+      if (e.button && e.button !== 0) return;
+      audio();
+      var i = +el.dataset.i;
+      var reselect = P.sel === i && !P.busy && !P.done;
+      if (!reselect) onSquare(i);
+      drag = (P && P.sel === i) ? { i: i, x: e.clientX, y: e.clientY, moved: false, ghost: null, toggle: reselect } : null;
+    });
+    window.onpointermove = function (e) {
+      if (!drag || !P) return;
+      if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 10) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        drag.ghost = document.createElement('div');
+        drag.ghost.className = 'dragghost';
+        drag.ghost.innerHTML = pieceHTML(P.board[drag.i]);
+        document.body.appendChild(drag.ghost);
+        var src = $('board').querySelector('[data-i="' + drag.i + '"] .piece'); if (src) src.style.visibility = 'hidden';
+      }
+      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+    };
+    window.onpointerup = window.onpointercancel = function (e) {
+      if (!drag) return;
+      var d = drag; drag = null;
+      if (d.ghost) d.ghost.remove();
+      if (!P) return;
+      if (!d.moved) { if (d.toggle) { P.sel = null; P.hint = P.hintMove ? P.hintMove.from : P.hint; drawBoard(); } return; }
+      var el = document.elementFromPoint(e.clientX, e.clientY), sq = el && el.closest ? el.closest('.sq') : null;
+      var to = sq ? +sq.dataset.i : -1;
+      var m = to >= 0 && to !== d.i && movesFrom(d.i).find(function (x) { return x.to === to; });
+      if (m && !P.busy) doMove(m, true); else drawBoard();
+    };
+  }
+
+  function onSquare(i) {
+    if (!P || P.busy || P.done) return;
+    var b = P.board, p = b[i], t = P.type;
+    if (t === 'tap') return tapStar(i);
+    if (t === 'meet') return meetPiece(i);
+    if (t === 'pawnwars' && P.turn !== 'w') return;
+    if (P.sel != null && P.sel !== i) {
+      var m = movesFrom(P.sel).find(function (x) { return x.to === i; });
+      if (m) return doMove(m);
+    }
+    if (p && p[0] === 'w') {
+      if (P.fixed.indexOf(i) >= 0) { sfx('oops'); say('Shh! That Pawn is sleeping. 💤 It can\'t move. Try another piece.'); return; }
+      if (!movesFrom(i).length) {
+        sfx('oops');
+        say(t === 'escape' ? 'That piece can\'t save the King. Try another one!' : 'That ' + PNAME[p[1]] + ' can\'t move right now. Try another one!');
+        P.sel = null; drawBoard(); return;
+      }
+      P.sel = i;
+      if (P.hintMove && P.hintMove.from === i) P.hint = P.hintMove.to;
+      sfx('tap'); drawBoard();
+      if (t === 'castle' && p[1] === 'K') explainCastle();
+      return;
+    }
+    if (p && p[0] === 'b') {
+      if (t === 'eat' && P.sel == null) { say('Yum! First tap a white piece, then tap the black one to eat it.'); return; }
+      if (t === 'bigeat' && P.sel == null && p[1] !== 'K') {
+        say('That black ' + PNAME[p[1]] + ' is worth ' + plural(C.VALUE[p[1]], 'point') + '. Tap a white piece first, then eat!');
+        return;
+      }
+      return showAttacks(i);
+    }
+    if (P.sel != null) { sfx('oops'); say('The ' + PNAME[b[P.sel][1]] + ' can\'t go there. Pick a blue dot!'); }
+    else if (t !== 'pawnwars') say('Tap a white piece first. 👆');
+  }
+
+  function showAttacks(i) {
+    var b = P.board, p = b[i];
+    var sqs = C.attacks(b, i).filter(function (s) { return !b[s] || b[s][0] !== 'b'; });
+    var keep = P.danger;
+    P.danger = sqs;
+    if (P.type === 'freeeat') say('The black ' + PNAME[p[1]] + ' guards the red squares. If you eat there, it eats you back!');
+    else say('The black ' + PNAME[p[1]] + ' can eat on the red squares. ' + (p[1] === 'P' ? 'Pawns eat diagonally!' : 'Stay away!'));
+    drawBoard();
+    clearTimeout(P.flash);
+    P.flash = later(function () { P.danger = P.type === 'safe' ? threatened(P.board) : P.type === 'escape' ? keep : []; drawBoard(); }, 1800);
+  }
+
+  // Why the King can't castle one way, said when he is picked up in a castle puzzle.
+  function explainCastle() {
+    var why = { k: C.castleBlock(P.board, 'w', P.rights, 'k'), q: C.castleBlock(P.board, 'w', P.rights, 'q') };
+    var side = { k: 'short', q: 'long' };
+    var open = C.castleMoves(P.board, 'w', P.rights).length;
+    ['k', 'q'].forEach(function (x) {
+      if (why[x] === 'attacked') say('A black piece is watching the squares on the ' + side[x] + ' side, so the King can\'t castle that way.' + (open ? ' Try the other side!' : ''));
+      else if (why[x] === 'check') say('The King is in check, so he can\'t castle right now.');
+      else if (why[x] === 'blocked' && !open) say('Friends are in the way! Move them first, then castle.');
+    });
+  }
+
+  function tapStar(i) {
+    var k = P.stars.indexOf(i);
+    if (k < 0) { sfx('oops'); say('Hmm, no star there. Find a twinkly star! ⭐'); return; }
+    P.stars.splice(k, 1); P.moves++;
+    sfx('star'); drawBoard(); floater(i, '+⭐');
+    if (!P.stars.length) return win();
+    say(pick(['Yes!', 'Got it!', 'Twinkle!']) + ' ' + (P.stars.length === 1 ? 'One more star!' : P.stars.length + ' more stars!'));
+  }
+
+  function meetPiece(i) {
+    var p = P.board[i];
+    if (!p) { say('Tap a piece to say hello! 👋'); return; }
+    var first = !P.met[i];
+    P.met[i] = 1; P.popAt = i;
+    sfx('tap'); drawBoard(); floater(i, 'Hi! 👋', '#2a7de1');
+    say(HELLO[p[1]]);
+    if (first && Object.keys(P.met).length === P.board.filter(Boolean).length) {
+      P.busy = true;
+      later(function () { P.busy = false; win(); }, 3200);
+    }
+  }
+
+  function snapshot() {
+    return { board: P.board.slice(), stars: P.stars.slice(), promoDone: P.promoDone, moves: P.moves, last: P.last, turn: P.turn,
+      phase: P.phase, rights: P.rights, quiet: P.quiet, ep: P.ep };
+  }
+  function restore(s) {
+    P.board = s.board; P.stars = s.stars; P.promoDone = s.promoDone; P.moves = s.moves; P.last = s.last; P.turn = s.turn;
+    P.phase = s.phase; P.rights = s.rights; P.quiet = s.quiet; P.ep = s.ep;
+    P.sel = null; P.hint = null; P.hintMove = null; P.blue = [];
+    P.danger = P.type === 'safe' ? threatened(P.board) : P.type === 'escape' ? [C.kingSq(P.board, 'w')] : [];
+  }
+  function undoMove() {
+    if (!P || P.busy || P.done || !P.history.length) return;
+    restore(P.history.pop()); sfx('tap'); drawBoard(); say('Okay, let\'s try that again!', true);
+  }
+  function revertLater(ms, msg) {
+    P.busy = true;
+    later(function () {
+      restore(P.history.pop()); P.busy = false; drawBoard();
+      if (msg) say(msg, true);
+    }, ms);
+  }
+
+  function animate(from, to, p, cb, dur) {
+    var fx = $('fx'), src = $('board').querySelector('[data-i="' + from + '"] .piece');
+    var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!fx || !fx.animate || reduce) { cb(); return; }
+    var me = P, a = sqPos(from), z = sqPos(to), g = document.createElement('div');
+    g.className = 'ghost'; g.innerHTML = pieceHTML(p);
+    fx.appendChild(g);
+    if (src) src.style.visibility = 'hidden';
+    var dist = Math.hypot(z.x - a.x, z.y - a.y), hop = p[1] === 'N' ? 1.4 : 1.12;
+    var anim = g.animate([
+      { left: a.x + '%', top: a.y + '%', transform: 'scale(1)' },
+      { left: (a.x + z.x) / 2 + '%', top: (a.y + z.y) / 2 + '%', transform: 'scale(' + hop + ')', offset: 0.5 },
+      { left: z.x + '%', top: z.y + '%', transform: 'scale(1)' }
+    ], { duration: dur || Math.min(560, 200 + dist * 5), easing: 'ease-in-out', fill: 'forwards' });
+    anim.onfinish = function () { g.remove(); if (P === me && !me.dead) cb(); };
+  }
+
+  function doMove(m, instant) {
+    var before = P.board, p = before[m.from];
+    P.history.push(snapshot());
+    P.busy = true; P.sel = null; P.hint = null; P.hintMove = null; P.blue = [];
+    if (P.type !== 'safe' && P.type !== 'escape') P.danger = [];
+    (instant ? function (cb) { cb(); } : function (cb) {
+      if (m.castle) animate(m.rookFrom, m.rookTo, before[m.rookFrom], function () {}, 520);
+      animate(m.from, m.to, p, cb, m.castle ? 520 : 0);
+    })(function () {
+      var nb = C.makeMove(before, m), promoted = p[1] === 'P' && nb[m.to][1] === 'Q';
+      P.board = nb; P.last = m; P.moves++; P.popAt = m.to; P.busy = false;
+      P.quiet = (p[1] === 'P' || m.capture) ? 0 : P.quiet + 1;
+      P.ep = P.useEp ? C.epSquare(before, m) : -1;
+      var gotStar = P.stars.indexOf(m.to);
+      if (gotStar >= 0) P.stars.splice(gotStar, 1);
+      if (promoted && !P.promoDone && P.pz.promoStars) {
+        P.promoDone = true;
+        P.stars = P.stars.concat(P.pz.promoStars.map(C.idx).filter(function (x) { return x !== m.to; }));
+      }
+      if (P.type === 'safe') P.danger = [];
+      if (P.type === 'escape') P.danger = C.inCheck(nb, 'w') ? [C.kingSq(nb, 'w')] : [];
+      drawBoard();
+      if (m.ep != null) { sfx('chomp'); floater(m.to, 'En passant! ✨', '#8a2be2'); }
+      else if (m.capture) { sfx('chomp'); floater(m.to, 'Chomp! 😋'); } else if (gotStar >= 0) { sfx('star'); floater(m.to, '+⭐'); } else sfx('move');
+      afterMove(m, p, before, promoted, gotStar >= 0);
+    });
+  }
+
+  function afterMove(m, p, before, promoted, gotStar) {
+    var b = P.board, t = P.type;
+    if (t === 'explore') {
+      if (P.moves >= P.pz.moves) return win();
+      if (promoted) say('Magic! The Pawn became a Queen! ✨ ' + (P.pz.moves - P.moves) + ' more!');
+      else say(P.moves + '! ' + (P.pz.moves - P.moves === 1 ? 'One more move!' : 'Move again!'));
+      return;
+    }
+    if (t === 'stars') {
+      if (promoted) { floater(m.to, '✨ Queen! ✨', '#8a2be2'); }
+      if (!P.stars.length) return win();
+      if (promoted) say('Magic! The Pawn turned into a Queen! ✨ A new star appeared. Can the Queen get it?');
+      else if (gotStar) say('Got one! ' + (P.stars.length === 1 ? 'One more star!' : P.stars.length + ' more stars!'));
+      else say(pick(['Keep going!', 'Where next?', 'Choo-choo! Keep going!'].slice(0, P.ch.id === 'rook' ? 3 : 2)), true);
+      return;
+    }
+    if (t === 'eat') {
+      if (eatDone(b, P.pz)) return win();
+      if (m.capture) {
+        var left = P.pz.targets ? P.pz.targets.map(C.idx).filter(function (x) { return b[x] && b[x][0] === 'b'; }).length : b.filter(function (x) { return x && x[0] === 'b'; }).length;
+        say('Yum! ' + (left === 1 ? 'One more to eat!' : left + ' more to eat!'));
+      }
+      return;
+    }
+    if (t === 'safe') {
+      var bad = threatened(b);
+      if (!bad.length) { say('Safe! No black piece can get it there. 🛡️', true); return win(); }
+      P.fails++;
+      return punish(bad[0], function (who) { return 'Oh no! The black ' + who + ' can eat it there. Let\'s try again!'; });
+    }
+    if (t === 'bigeat') {
+      if (!m.capture) { P.fails++; sfx('oops'); say('Eat a black piece! Pick the one worth the most points.'); return revertLater(1800); }
+      var got = C.VALUE[m.capture[1]];
+      if (got < P.best) {
+        P.fails++; sfx('oops');
+        var top = C.legalMoves(before, 'w').filter(function (x) { return x.capture && C.VALUE[x.capture[1]] === P.best; })[0];
+        say('Yum! But the ' + PNAME[top.capture[1]] + ' was worth more: ' + plural(P.best, 'point') + '! Try again.');
+        return revertLater(2400);
+      }
+      say('Yum! The ' + PNAME[m.capture[1]] + ' is worth ' + plural(got, 'point') + '! 💰', true);
+      return win(PNAME[m.capture[1]] + ': ' + plural(got, 'point') + '! 💰');
+    }
+    if (t === 'freeeat') {
+      if (!m.capture) { P.fails++; sfx('oops'); say('Find a black piece to eat: one with no guard!'); return revertLater(1800); }
+      if (!C.safeLanding(before, m, b)) {
+        P.fails++;
+        return punish(m.to, function (who) { return 'Oh no! The black ' + who + ' was guarding it. Look for a piece with no guard!'; });
+      }
+      say('A free lunch! Nobody can eat you back. 😋', true);
+      return win('A free lunch! 😋');
+    }
+    if (t === 'fork') {
+      var targets = P.pz.targets.map(C.idx), hit = C.targetsOf(b, m.to).filter(function (x) { return targets.indexOf(x) >= 0; });
+      if (C.isFork(b, m, targets)) {
+        P.danger = hit; drawBoard(); sfx('check'); floater(m.to, 'Fork! 🍴', '#8a2be2');
+        say('FORK! You attack two pieces at once. Black can only save one!', true);
+        return win('Fork! 🍴');
+      }
+      P.fails++;
+      if (hit.length >= 2) return punish(m.to, function (who) { return 'Two at once, but the black ' + who + ' can eat your piece there! Try again.'; });
+      sfx('oops'); P.danger = hit; drawBoard();
+      say(hit.length ? 'That attacks only one. Find a square that attacks BOTH!' : 'That doesn\'t attack them yet. Try again!');
+      return revertLater(2200);
+    }
+    if (t === 'promote') {
+      if (!C.safeLanding(before, m, b)) {
+        P.fails++;
+        return punish(m.to, function (who) { return 'Oh no! The black ' + who + ' was guarding that square. Find a safe road!'; });
+      }
+      if (promoted) {
+        floater(m.to, '👑 Queen!', '#8a2be2');
+        say('Magic! Your Pawn became a Queen! 👑', true);
+        return win('A new Queen! 👑');
+      }
+      say(pick(['Safe! Keep going.', 'Good! Keep marching.', 'Nice and safe!']));
+      return;
+    }
+    if (t === 'castle') {
+      if (m.castle) {
+        floater(m.to, 'Castled! 🏰', '#2a7de1');
+        say('You castled! The King is safe in his castle. 🏰', true);
+        return win('Castled! 🏰');
+      }
+      if (!C.keepsCastle(P.rights, before, m)) {
+        P.fails++; sfx('oops');
+        say(p[1] === 'K' ? 'Oh no! Once the King moves, he can\'t castle anymore. Let\'s try again.' : 'Oh no! That Rook moved, so it can\'t castle anymore. Let\'s try again.');
+        return revertLater(2400);
+      }
+      say(C.castleMoves(b, 'w', P.rights).length ? 'The road is clear! Now the King can castle.' : 'Good! Keep clearing the way.');
+      return;
+    }
+    if (t === 'stalemate') {
+      var s2 = C.status(b, 'b');
+      if (s2 === 'stalemate') {
+        P.blue = [C.kingSq(b, 'b')]; drawBoard(); floater(m.to, 'Tie! 🤝', '#2a7de1');
+        say('Stalemate! The King can\'t move, but he is not in check. It\'s a tie! 🤝', true);
+        return win('Stalemate: a tie! 🤝');
+      }
+      P.fails++; sfx('oops');
+      if (s2 === 'check' || s2 === 'checkmate') { P.danger = [C.kingSq(b, 'b')]; say('That\'s check! For a tie, the King must NOT be in check. Try again.'); }
+      else {
+        P.blue = C.legalMoves(b, 'b').map(function (x) { return x.to; });
+        say('The black King can still move to the blue squares. Try again!');
+      }
+      drawBoard();
+      return revertLater(2600);
+    }
+    if (t === 'mate2') return mate2After(m, before, b);
+    if (t === 'enpassant') {
+      if (m.ep != null) {
+        var chk = C.inCheck(b, 'b');
+        if (chk) { P.danger = [C.kingSq(b, 'b')]; drawBoard(); }
+        say('EN PASSANT! Your Pawn ate the jumping Pawn in passing!' + (chk ? ' And it\'s CHECK!' : ''), true);
+        return win('En passant! ✨' + (chk ? ' Check!' : ''));
+      }
+      P.fails++; sfx('oops');
+      say(m.capture ? 'Yum, but that\'s a normal eat. Use the trick on the Pawn that just JUMPED!' :
+        'That\'s a normal move. Use the secret trick: move diagonally behind the black Pawn that just jumped!');
+      return revertLater(2400);
+    }
+    if (t === 'check') {
+      if (C.inCheck(b, 'b')) {
+        P.danger = [C.kingSq(b, 'b')]; drawBoard(); sfx('check'); floater(m.to, 'Check!', '#d32f2f');
+        say('CHECK! The black King is under attack!', true);
+        return win();
+      }
+      P.fails++; sfx('oops');
+      say('Not check yet. The black King is still safe. Try again!');
+      return revertLater(1500);
+    }
+    if (t === 'escape') {
+      var ks = C.kingSq(before, 'w'), atk = C.attackers(before, ks, 'b');
+      var how = p[1] === 'K' && !m.capture ? 'You RAN away! 🏃' : m.capture && atk.indexOf(m.to) >= 0 ? 'You ATE the attacker! 😋' : 'You BLOCKED the check! 🧱';
+      say(how + ' The King is safe!', true);
+      return win(how);
+    }
+    if (t === 'mate') {
+      var st = C.status(b, 'b');
+      if (st === 'checkmate') {
+        P.danger = [C.kingSq(b, 'b')]; drawBoard(); sfx('check'); floater(m.to, 'Checkmate!', '#d32f2f');
+        say('CHECKMATE! The black King has no way out!', true);
+        return win();
+      }
+      P.fails++; sfx('oops');
+      if (st === 'check') {
+        var bm = C.legalMoves(b, 'b'), km = bm.filter(function (x) { return b[x.from][1] === 'K'; });
+        if (km.length) {
+          P.blue = km.map(function (x) { return x.to; });
+          say('Check! But the King can run to the blue square' + (km.length > 1 ? 's' : '') + '. Try again!');
+        } else {
+          P.blue = [bm[0].from];
+          say('Check! But a black piece can stop it. Try again!');
+        }
+        P.danger = [C.kingSq(b, 'b')]; drawBoard();
+        return revertLater(2600);
+      }
+      if (st === 'stalemate') say('Oops! The King can\'t move, but he is not in check. That\'s a tie! Try again.');
+      else say('Not checkmate yet. Try again!');
+      return revertLater(2000);
+    }
+    if (t === 'pawnwars') return pawnWarsAfter('w', m);
+  }
+
+  // A black piece eats the white piece on sq, then the board goes back so the child can try again.
+  function punish(sq, text) {
+    var b = P.board, att = C.attackers(b, sq, 'b')[0], who = b[att];
+    P.danger = [sq]; P.busy = true; drawBoard();
+    sfx('oops');
+    later(function () {
+      animate(att, sq, who, function () {
+        P.board = C.makeMove(P.board, { from: att, to: sq }); P.last = { from: att, to: sq }; P.danger = [];
+        drawBoard(); sfx('chomp'); floater(sq, 'Chomp!', '#d32f2f');
+        say(text(PNAME[who[1]]));
+        revertLater(2400, P.pz.text);
+      });
+    }, 450);
+  }
+
+  // Two-step checkmate: a key move, black's reply, then the mate.
+  function mate2After(m, before, b) {
+    var st = C.status(b, 'b');
+    if (st === 'checkmate') {
+      P.danger = [C.kingSq(b, 'b')]; drawBoard(); sfx('check'); floater(m.to, 'Checkmate!', '#d32f2f');
+      say('CHECKMATE! You thought two steps ahead! 🧠', true);
+      return win(P.phase ? 'Checkmate in two steps! 🧠' : 'Checkmate! 🏆');
+    }
+    if (P.phase === 0 && st !== 'stalemate' && C.isMate2Key(before, m)) {
+      P.busy = true; updateInfo();
+      say('Clever move! Now black moves…', true);
+      later(function () {
+        var replies = C.legalMoves(P.board, 'b'), r = pick(replies);
+        animate(r.from, r.to, P.board[r.from], function () {
+          P.board = C.makeMove(P.board, r); P.last = r; P.popAt = r.to; P.busy = false; P.phase = 1;
+          drawBoard(); updateInfo();
+          sfx(r.capture ? 'chomp' : 'move');
+          say('Black moved. Now find the CHECKMATE!');
+        });
+      }, 900);
+      return;
+    }
+    P.fails++; sfx('oops');
+    if (st === 'stalemate') say('Oops, that\'s a tie! The King can\'t move, but he is not in check. Try again.');
+    else if (P.phase === 0) say(st === 'check' ? 'Check! But after that, black can get away. Try another first move!' : 'Hmm, after that black can escape. Try another first move!');
+    else if (st === 'check') {
+      P.blue = C.legalMoves(b, 'b').map(function (x) { return x.to; }); P.danger = [C.kingSq(b, 'b')]; drawBoard();
+      say('Check! But the King can still escape. Find the checkmate!');
+    }
+    else say('Not checkmate yet. Try again!');
+    return revertLater(2600);
+  }
+
+  // ---------- Pawn Wars ----------
+  function pwWinner(b) {
+    if (b.indexOf('wQ') >= 0) return 'w';
+    if (b.indexOf('bQ') >= 0) return 'b';
+    if (b.indexOf('bP') < 0) return 'w';
+    if (b.indexOf('wP') < 0) return 'b';
+    return null;
+  }
+  function passed(b, sq, c) {
+    var f = sq % 8, r = sq >> 3, opp = c === 'w' ? 'bP' : 'wP';
+    for (var i = 0; i < 64; i++) {
+      if (b[i] !== opp || Math.abs((i % 8) - f) > 1) continue;
+      if (c === 'w' ? (i >> 3) > r : (i >> 3) < r) return false;
+    }
+    return true;
+  }
+  function nearestPawn(b, sq, pawn) {
+    var d = 8;
+    b.forEach(function (pc, i) { if (pc === pawn) d = Math.min(d, Math.max(Math.abs(i % 8 - sq % 8), Math.abs((i >> 3) - (sq >> 3)))); });
+    return d;
+  }
+  function pwScore(b, m, c, careful) {
+    var nb = C.makeMove(b, m), opp = c === 'w' ? 'b' : 'w', p = b[m.from], kings = nb.indexOf(opp + 'K') >= 0;
+    if (p[1] === 'P' && nb[m.to][1] === 'Q') return 10000;
+    if (kings && C.status(nb, opp) === 'checkmate') return 20000;
+    var s = 0;
+    if (p[1] === 'K') s = 4 - nearestPawn(nb, m.to, opp + 'P'); // Kings walk toward the enemy Pawns
+    else {
+      var r = m.to >> 3, prog = c === 'w' ? r : 7 - r;
+      s = prog * 2;
+      if (passed(nb, m.to, c)) s += 6 + prog * 3;
+    }
+    if (m.capture) s += 30;
+    if (C.isAttacked(nb, m.to, opp)) s -= C.isAttacked(nb, m.to, c) ? 8 : 25;
+    if (kings && C.inCheck(nb, opp)) s += 3;
+    if (careful) {
+      var replies = C.legalMoves(nb, opp, null, P && P.useEp ? C.epSquare(b, m) : -1);
+      if (replies.some(function (om) { return nb[om.from][1] === 'P' && C.makeMove(nb, om)[om.to][1] === 'Q'; })) s -= 5000;
+      if (kings && replies.some(function (om) { return C.status(C.makeMove(nb, om), c) === 'checkmate'; })) s -= 8000;
+      if (kings && !replies.length) s -= 200; // stalemate is only a tie
+    }
+    return s;
+  }
+  function pwBest(b, c, careful, noise, ep) {
+    var ms = C.legalMoves(b, c, null, ep), best = null, bs = -Infinity;
+    ms.forEach(function (m) {
+      var s = pwScore(b, m, c, careful) + (Math.random() * 2 - 1) * noise;
+      if (s > bs) { bs = s; best = m; }
+    });
+    return best;
+  }
+  function computerMove() {
+    var b = P.board, gentle = state.settings.ai !== 'tricky';
+    if (gentle && Math.random() < 0.3) return pick(C.legalMoves(b, 'b', null, P.ep));
+    return pwBest(b, 'b', !gentle, gentle ? 30 : 4, P.ep);
+  }
+  function pawnWarsAfter(c, m) {
+    var b = P.board, w = pwWinner(b);
+    if (w) return pawnWarsEnd(w, m.to);
+    var nextC = c === 'w' ? 'b' : 'w';
+    if (!C.legalMoves(b, nextC, null, P.ep).length) return C.inCheck(b, nextC) ? pawnWarsEnd(c, m.to, 'mate') : pawnWarsEnd('tie', m.to);
+    if (P.quiet >= 40) return pawnWarsEnd('tie', m.to, 'quiet');
+    if (C.inCheck(b, nextC)) {
+      P.danger = [C.kingSq(b, nextC)]; drawBoard(); sfx('check'); floater(C.kingSq(b, nextC), 'Check!', '#d32f2f');
+      if (nextC === 'w') say('Check! Your King must step out of danger.');
+    } else if (P.danger.length) { P.danger = []; drawBoard(); }
+    P.turn = nextC; updateInfo();
+    if (nextC === 'b') {
+      P.busy = true; updateInfo();
+      say(pick(['Hmm, my turn…', 'Let me think…', 'Here I come!']), true);
+      later(function () {
+        var bm = computerMove();
+        animate(bm.from, bm.to, b[bm.from], function () {
+          P.quiet = (b[bm.from][1] === 'P' || bm.capture) ? 0 : P.quiet + 1;
+          P.ep = P.useEp ? C.epSquare(P.board, bm) : -1;
+          P.board = C.makeMove(P.board, bm); P.last = bm; P.popAt = bm.to; P.busy = false;
+          drawBoard();
+          if (bm.ep != null) { sfx('chomp'); floater(bm.to, 'En passant!', '#d32f2f'); }
+          else if (bm.capture) { sfx('chomp'); floater(bm.to, 'Chomp!', '#d32f2f'); } else sfx('move');
+          if (!pwWinner(P.board) && C.legalMoves(P.board, 'w', null, P.ep).length) {
+            if (P.ep >= 0 && C.epMoves(P.board, 'w', P.ep).length) say('Ooh! That Pawn jumped right past yours. You can eat it en passant, but only right now!');
+            else if (bm.ep != null) say('The computer ate your Pawn en passant! Your turn.', true);
+            else say(bm.capture ? 'The computer ate one of your Pawns! Your turn.' : P.pz.kings ? 'Your turn! Move a Pawn or your King.' : 'Your turn! Move a white Pawn.', true);
+          }
+          pawnWarsAfter('b', bm);
+        });
+      }, 650);
+    } else updateInfo();
+  }
+  function pawnWarsEnd(w, sq, how) {
+    P.done = true; state.games++; updateInfo();
+    var game = P.ch.title.replace(/^Game: /, '');
+    if (w === 'w') {
+      state.wins++; save();
+      if (how === 'mate') { P.danger = [C.kingSq(P.board, 'b')]; drawBoard(); floater(sq, 'Checkmate!', '#d32f2f'); }
+      else if (sq != null && P.board[sq] && P.board[sq][1] === 'Q') floater(sq, '👑 Winner!', '#8a2be2');
+      return win((how === 'mate' ? 'Checkmate! ' : '') + 'You won ' + game + '! 🏆');
+    }
+    save();
+    var msg = w === 'b' ? (how === 'mate' ? 'Checkmate! The computer won this time. Good game! Want to play again?' : 'The computer won this time. Good game! Want to play again?')
+      : how === 'quiet' ? 'Nobody can win this one. It\'s a tie! Play again?' : 'Stuck! Nobody can move. It\'s a tie! Play again?';
+    sfx(w === 'b' ? 'oops' : 'move');
+    say(msg);
+    later(function () {
+      modal('<div class="big">' + (w === 'b' ? '🤖' : '🤝') + '</div><h2>' + (w === 'b' ? 'Good game!' : 'It\'s a tie!') + '</h2><p>' + esc(msg) + '</p>' +
+        '<div class="row"><button class="btn primary" id="mAgain">🔁 Play again</button><button class="btn" id="mHome">🏠 Home</button></div>');
+      var ci = P.ci, pi = P.pi;
+      on('mAgain', function () { startPuzzle(ci, pi); });
+      on('mHome', renderHome);
+    }, 1200);
+  }
+
+  // ---------- hints ----------
+  function hintMove() {
+    var b = P.board, ms = allMoves();
+    if (!ms.length) return null;
+    switch (P.type) {
+      case 'stars': case 'eat': {
+        var r = C.solve(P.pz, b, P.stars, P.promoDone);
+        return r && r.first ? r.first : ms[0];
+      }
+      case 'safe': return ms.find(function (m) { return !threatened(C.makeMove(b, m)).length; }) || ms[0];
+      case 'check': return ms.find(function (m) { return C.inCheck(C.makeMove(b, m), 'b'); }) || ms[0];
+      case 'mate': return ms.find(function (m) { return C.status(C.makeMove(b, m), 'b') === 'checkmate'; }) || ms[0];
+      case 'escape': {
+        var atk = C.attackers(b, C.kingSq(b, 'w'), 'b');
+        return ms.find(function (m) { return atk.indexOf(m.to) >= 0; }) || ms.find(function (m) { return b[m.from][1] === 'K'; }) || ms[0];
+      }
+      case 'pawnwars': return pwBest(b, 'w', true, 0, P.ep);
+      case 'enpassant': return ms.find(function (m) { return m.ep != null; }) || ms[0];
+      case 'bigeat': return ms.filter(function (m) { return m.capture && C.VALUE[m.capture[1]] === P.best; })[0] || ms[0];
+      case 'freeeat': return ms.find(function (m) { return m.capture && C.safeLanding(b, m, C.makeMove(b, m)); }) || ms[0];
+      case 'fork': return ms.find(function (m) { return C.isFork(C.makeMove(b, m), m, P.pz.targets.map(C.idx)); }) || ms[0];
+      case 'promote': { var rp = promoteSearch(b); return rp && rp.first ? rp.first : ms[0]; }
+      case 'castle': { var rc = castleSearch(b, P.rights); return rc && rc.first ? rc.first : ms[0]; }
+      case 'stalemate': return ms.find(function (m) { return C.status(C.makeMove(b, m), 'b') === 'stalemate'; }) || ms[0];
+      case 'mate2': return P.phase ? (C.mateMoves(b, 'w')[0] || ms[0]) : (ms.find(function (m) { return C.isMate2Key(b, m); }) || ms[0]);
+      default: return pick(ms);
+    }
+  }
+  function hint() {
+    if (!P || P.busy || P.done) return;
+    audio(); P.hints++;
+    if (P.type === 'tap') { P.hint = P.stars[0]; drawBoard(); say('Look for the glowing square. Tap the star! ⭐'); return; }
+    if (P.type === 'meet') {
+      for (var i = 0; i < 64; i++) if (P.board[i] && !P.met[i]) { P.hint = i; break; }
+      drawBoard(); say('Tap the glowing piece to say hello!'); return;
+    }
+    var m = hintMove(); if (!m) return;
+    P.hintMove = m;
+    if (P.sel === m.from) { P.hint = m.to; drawBoard(); say('Now tap the glowing square!'); return; }
+    P.sel = null; P.hint = m.from; drawBoard();
+    var who = PNAME[P.board[m.from][1]];
+    var tips = {
+      stars: 'Try the glowing ' + who + '! Then find a dot that gets closer to a star.',
+      eat: 'The glowing ' + who + ' can eat something. Tap it!',
+      safe: 'Move the glowing ' + who + '. Find a square no black piece can reach.',
+      check: 'The glowing ' + who + ' can say "Check!"',
+      mate: 'The glowing ' + who + ' can do the checkmate!',
+      escape: 'The glowing ' + who + ' can save the King!',
+      pawnwars: 'Ollie likes the glowing ' + who + '!',
+      bigeat: 'The glowing ' + who + ' can eat the biggest treasure!',
+      freeeat: 'The glowing ' + who + ' can eat a piece that has no guard.',
+      fork: 'The glowing ' + who + ' can attack two pieces at once!',
+      promote: 'Move the glowing ' + who + '. Stay on safe squares!',
+      castle: who === 'King' ? 'Tap the glowing King, then the square two steps toward the Rook!' : 'Move the glowing ' + who + ' out of the King\'s way.',
+      stalemate: 'The glowing ' + who + ' can make the tie.',
+      mate2: P.phase ? 'The glowing ' + who + ' can checkmate now!' : 'Start with the glowing ' + who + '!',
+      enpassant: 'The glowing ' + who + ' is right beside the jumper. Tap it, then the gold dot!'
+    };
+    say(tips[P.type] || 'Tap the glowing ' + who + ', then a blue dot!');
+  }
+
+  // ---------- winning ----------
+  function rating() {
+    var r = 3;
+    if (P.par && P.moves > P.par) r = 2;
+    if (P.hints || P.fails) r = 2;
+    return r;
+  }
+  function win(extra) {
+    P.done = true; P.busy = false; updateInfo();
+    var id = P.ch.id, r = rating(), wasDone = chapterDone(P.ci);
+    var arr = state.stars[id] || (state.stars[id] = []);
+    arr[P.pi] = Math.max(arr[P.pi] || 0, r);
+    var finished = chapterDone(P.ci), newSticker = finished && !state.stickers[id];
+    if (finished) { state.stickers[id] = true; homeSeason = null; }
+    save();
+    sfx('win');
+    var ci = P.ci, pi = P.pi;
+    later(function () {
+      var last = pi === P.ch.puzzles.length - 1;
+      if (finished && (last || !wasDone)) return chapterModal(ci, newSticker, extra);
+      puzzleModal(ci, pi, r, extra);
+    }, ONE_MOVE[P.type] ? 1200 : 700);
+  }
+  function stars(r) { return '⭐'.repeat(r) + '<span style="opacity:.22">' + '⭐'.repeat(3 - r) + '</span>'; }
+  function puzzleModal(ci, pi, r, extra) {
+    var praise = pick(PRAISE), tip = '';
+    if (P.par && P.moves > P.par) tip = 'You did it in ' + plural(P.moves, 'move') + '. Super-star challenge: can you do it in ' + P.par + '?';
+    else if (P.hints || P.fails) tip = 'Try it again on your own for 3 stars!';
+    var next = pi + 1 < CHAPTERS[ci].puzzles.length ? pi + 1 : firstUndone(ci);
+    modal('<div class="big">' + pick(CHEERS) + '</div><h2>' + esc(praise) + '</h2><div class="rating">' + stars(r) + '</div>' +
+      (extra ? '<p><b>' + esc(extra) + '</b></p>' : '') + (tip ? '<p>' + esc(tip) + '</p>' : '') +
+      '<div class="row"><button class="btn" id="mAgain">🔁 Again</button><button class="btn primary" id="mNext">Next ➡️</button></div>');
+    confetti(24);
+    speak(praise + (extra ? ' ' + extra : ''));
+    on('mAgain', function () { startPuzzle(ci, pi); });
+    on('mNext', function () { sfx('tap'); startPuzzle(ci, next); });
+  }
+  function chapterModal(ci, newSticker, extra) {
+    var ch = CHAPTERS[ci], nxt = ci + 1 < CHAPTERS.length ? ci + 1 : -1;
+    var line = newSticker ? 'You earned a new sticker!' : 'You finished it again. Hooray!';
+    var sn = seasonOf(ci), nextSeason = seasonInfo(sn + 1);
+    if (newSticker && seasonDone(sn) && nextSeason) line += ' And you finished ' + seasonInfo(sn).title.split(':')[0] + '! ' + nextSeason.title + ' is open! 🌟';
+    modal('<div class="sticker">' + ch.sticker + '</div><h2>Hooray! You finished<br>"' + esc(ch.title) + '"</h2>' +
+      (extra ? '<p><b>' + esc(extra) + '</b></p>' : '') + '<p>' + esc(line) + '</p>' +
+      '<div class="row"><button class="btn" id="mBook">📒 Sticker book</button>' +
+      (nxt >= 0 ? '<button class="btn primary" id="mNext">Next adventure ➡️</button>' : '') +
+      '<button class="btn" id="mHome">🏠 Home</button></div>');
+    confetti(80);
+    speak((extra ? extra + ' ' : '') + 'You finished ' + ch.title.replace(/!$/, '') + '! ' + line);
+    on('mBook', renderStickers);
+    on('mHome', renderHome);
+    on('mNext', function () { renderStory(nxt); });
+  }
+
+  // ---------- sticker book ----------
+  function renderStickers() {
+    leave();
+    var have = stickerCount();
+    var items = SEASONS.map(function (x) {
+      var list = seasonChapters(x.n);
+      var got = list.filter(function (ci) { return state.stickers[CHAPTERS[ci].id]; }).length;
+      return '<h3 class="season-head">' + x.icon + ' ' + esc(x.title) + ' <span class="cnt">' + got + '/' + list.length + '</span></h3><div class="stickers">' +
+        list.map(function (ci) {
+          var ch = CHAPTERS[ci], has = !!state.stickers[ch.id];
+          return '<div class="stk' + (has ? '' : ' no') + '" data-ci="' + ci + '"><div class="s"' + (has ? '' : ' style="filter:grayscale(1)"') + '>' +
+            ch.sticker + '</div><div class="n">' + esc(ch.title) + '</div></div>';
+        }).join('') + '</div>';
+    }).join('');
+    var msg = have === CHAPTERS.length ? 'You collected EVERY sticker! You are a chess champion! 🏆' :
+      'You have ' + have + ' of ' + CHAPTERS.length + ' stickers. Finish an adventure to win its sticker!';
+    app.innerHTML = '<h2 class="page">📒 My Sticker Book</h2><div class="hello"><div class="owl" id="owl">' + OLLIE + '</div>' +
+      '<div class="speech">' + esc(msg) + '</div></div>' + items;
+    speak(msg);
+    on('owl', function () { speak(msg); });
+    app.querySelectorAll('.stk').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var ch = CHAPTERS[+el.dataset.ci];
+        if (state.stickers[ch.id]) {
+          var s = el.querySelector('.s'); s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
+          sfx('star'); speak(ch.title + '!');
+        } else speak('Finish ' + ch.title + ' to get this sticker!');
+      });
+    });
+  }
+
+  // ---------- grown-ups guide ----------
+  function renderGuide() {
+    leave();
+    var s = state.settings;
+    var rows = SEASONS.map(function (x) {
+      return '<tr class="season-row"><th colspan="3">' + x.icon + ' ' + esc(x.title) + '</th></tr>' + seasonChapters(x.n).map(function (ci) {
+        var ch = CHAPTERS[ci], g = GUIDE[ch.id] || ['', ''];
+        return '<tr><td>' + ch.icon + ' ' + esc(ch.title) + '</td><td>' + esc(g[0]) + '</td><td>' + esc(g[1]) + '</td></tr>';
+      }).join('');
+    }).join('');
+    app.innerHTML = '<div class="guide"><h2>👪 For grown-ups</h2>' +
+      '<p>Chess Adventure teaches the rules of chess in tiny steps, one new idea at a time. Each adventure starts with a short story, then 1 to 6 small puzzles. ' +
+      'Ollie the Owl reads everything aloud, so your child doesn\'t need to read.</p>' +
+      '<p>Season 1 teaches how every piece moves, capturing, check and checkmate. Season 2 opens after it and builds real playing skills: ' +
+      'piece values, safe captures, forks, promotion, castling, en passant, stalemate and two-move checkmates.</p>' +
+      '<h3>How to help</h3><ul>' +
+      '<li>Sit together. 5 to 10 minutes a day is plenty for a 4-year-old.</li>' +
+      '<li>Let them try first. The 💡 Hint button makes the right piece glow. Use it before frustration sets in.</li>' +
+      '<li>Praise effort, not stars. Stars only show how many moves were used.</li>' +
+      '<li>Play it on a real board too. Moving real pieces helps the rules stick.</li>' +
+      '<li>Tap a black piece to see where it can capture (red squares). This helps in the "Watch Out!" adventure.</li></ul>' +
+      '<h3>What each adventure teaches</h3><table><tr><th>Adventure</th><th>Your child learns</th><th>Try this together</th></tr>' + rows + '</table>' +
+      '<h3>Simplified on purpose</h3><p class="small">Draws by repetition are left out. Castling only appears in "The Castle Move". En passant is taught in "En Passant!" and used in Kings & Pawns; ' +
+      'Season 1\'s Pawn Wars leaves it out because it hasn\'t been taught yet. ' +
+      'Pawns always become a Queen. Kings are never captured. Pawn Wars: the first pawn to reach the far side wins; if the player to move is stuck, it\'s a tie. ' +
+      'Kings & Pawns: make a Queen or checkmate to win; being stuck without check, or 40 moves in a row without a pawn move or capture, is a tie.</p>' +
+      '<h3>Settings</h3><div class="settings">' +
+      '<label><input type="checkbox" id="gVoice"' + (s.voice ? ' checked' : '') + '> Read aloud</label>' +
+      '<label><input type="checkbox" id="gSfx"' + (s.sfx ? ' checked' : '') + '> Sound effects</label>' +
+      '<label>Voice speed <select id="gRate"><option value="0.75">Slow</option><option value="0.9">Normal</option><option value="1.05">Quick</option></select></label>' +
+      '<label><input type="checkbox" id="gCoords"' + (s.coords ? ' checked' : '') + '> Letters and numbers on the board</label>' +
+      '<label><input type="checkbox" id="gUnlock"' + (s.unlockAll ? ' checked' : '') + '> Unlock all adventures</label>' +
+      '<label>Pawn Wars computer <select id="gAi"><option value="gentle">Gentle</option><option value="tricky">Tricky</option></select></label>' +
+      '</div><p class="small">Progress: ' + plural(stickerCount(), 'sticker') + ', ' + plural(state.wins, 'game win') + '. Saved in this browser only. ' +
+      'Version ' + esc(APP_VERSION) + '.</p>' +
+      '<div class="row" style="justify-content:flex-start"><button class="btn small" id="gTest">🔊 Test voice</button>' +
+      '<button class="btn small" id="gReset">🗑️ Reset progress</button></div></div>';
+    $('gRate').value = String(s.rate); if ($('gRate').selectedIndex < 0) $('gRate').value = '0.9';
+    $('gAi').value = s.ai;
+    function bind(id, key, conv) {
+      $(id).addEventListener('change', function (e) { s[key] = conv(e.target); save(); });
+    }
+    bind('gVoice', 'voice', function (el) { return el.checked; });
+    bind('gSfx', 'sfx', function (el) { return el.checked; });
+    bind('gRate', 'rate', function (el) { return +el.value; });
+    bind('gCoords', 'coords', function (el) { return el.checked; });
+    bind('gUnlock', 'unlockAll', function (el) { return el.checked; });
+    bind('gAi', 'ai', function (el) { return el.value; });
+    on('gTest', function () { audio(); speak('Hi! I\'m Ollie the Owl. Let\'s play chess!'); });
+    on('gReset', function () {
+      if (!confirm('Erase all stars, stickers and wins?')) return;
+      state.stars = {}; state.stickers = {}; state.wins = 0; state.games = 0; save();
+      renderGuide();
+    });
+  }
+
+  renderHome();
+})();
+</script>
+</body>
+</html>
