@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<!-- Template for the online Check-Up. tools/build-assessment.js fills in the puzzles, scoring and art,
+     and writes <outDir>/online/index.html. Don't open this file directly. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ollie's Chess Check-Up (online)</title>
+<meta name="description" content="60 chess puzzles for kids that estimate a level and a rating from 100 to 1800+. Answer on screen and get a result right away.">
+<style>
+:root { --light: #fff4d9; --dark: #7cb782; --frame: #8a5a3b; --accent: #ff8a3d; --ink: #3b2f2f; --sky: #bfe6ff;
+  --bs: max(260px, min(92vw, calc(100vh - 360px), 520px)); }
+@media (min-width: 900px) { :root { --bs: max(320px, min(48vw, calc(100vh - 200px), 580px)); } }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Trebuchet MS", sans-serif; color: var(--ink);
+  background: linear-gradient(180deg, var(--sky) 0%, #fff6e0 100%) fixed; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+h1, h2, h3 { font-family: "Arial Rounded MT Bold", "Chalkboard SE", "Comic Sans MS", sans-serif; font-weight: normal; margin: 0; }
+[hidden] { display: none !important; }
+.btn { font: inherit; font-size: clamp(16px, 3.4vw, 20px); border: 0; border-radius: 999px; padding: 10px 18px; background: #fff; color: var(--ink);
+  box-shadow: 0 4px 0 rgba(0,0,0,.15); cursor: pointer; text-decoration: none; display: inline-block; }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.15); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.small { font-size: 15px; padding: 8px 14px; }
+.btn.icon { padding: 6px 10px; font-size: 22px; line-height: 1.2; }
+.btn:disabled { opacity: .4; cursor: default; transform: none; }
+.row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+header.bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; max-width: 1100px; margin: 0 auto; }
+header.bar h1 { flex: 1; text-align: center; font-size: clamp(18px, 4vw, 26px); }
+main { max-width: 1100px; margin: 0 auto; padding: 0 12px 32px; }
+.card { background: #fff; border-radius: 26px; padding: 18px 22px; box-shadow: 0 5px 0 rgba(0,0,0,.08); }
+.ollie { display: block; overflow: visible; }
+
+/* start */
+#start { max-width: 720px; margin: 0 auto; }
+.hello { display: flex; align-items: center; gap: 16px; margin: 6px 0 16px; }
+.hello .art { width: clamp(100px, 24vw, 160px); flex: none; }
+.bubble { position: relative; background: #fff; border-radius: 22px; padding: 14px 18px; font-size: clamp(16px, 3.4vw, 20px); line-height: 1.4;
+  box-shadow: 0 4px 0 rgba(0,0,0,.08); }
+.field { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; font-size: 20px; margin: 4px 0 16px; }
+.field input { font: inherit; font-size: 20px; padding: 8px 14px; border-radius: 14px; border: 3px solid var(--sky); width: min(260px, 70vw); }
+.note { font-size: 15px; color: #6a5a4a; text-align: center; margin: 10px 0 0; }
+.grown { font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.5; margin-top: 18px; }
+.grown h2 { font-size: 20px; color: var(--accent); margin-bottom: 6px; }
+.grown p { margin: 0 0 8px; }
+.past { list-style: none; padding: 0; margin: 6px 0 0; }
+.past li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #eadfcc; }
+.past li span { flex: 1; }
+
+/* puzzle */
+.tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 2px 0 8px; }
+.tab { font: inherit; border: 0; border-radius: 999px; background: rgba(255,255,255,.6); color: var(--ink); padding: 5px 10px; cursor: pointer;
+  font-size: 15px; box-shadow: 0 3px 0 rgba(0,0,0,.08); display: flex; align-items: center; gap: 4px; }
+.tab .ic { font-size: 20px; }
+.tab.on { background: #fff; outline: 3px solid var(--accent); }
+.dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 10px; }
+.dot { font: inherit; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid #cdbfa8; background: #fff; color: #8a7a6a; font-size: 13px;
+  cursor: pointer; padding: 0; }
+.dot.done { background: #ffd98a; border-color: #e0a100; color: var(--ink); }
+.dot.cur { outline: 3px solid var(--accent); outline-offset: 2px; }
+.stage { display: flex; gap: 22px; justify-content: center; align-items: flex-start; }
+.left { flex: none; width: var(--bs); }
+.right { flex: 1; max-width: 460px; min-width: 0; }
+@media (max-width: 899px) { .stage { flex-direction: column; align-items: center; } .right { width: var(--bs); max-width: none; } }
+.topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.pid { background: var(--accent); color: #fff; font-family: "Arial Rounded MT Bold", sans-serif; padding: 3px 12px; border-radius: 999px; font-size: 17px; }
+.count { font-size: 15px; color: #6a5a4a; }
+.turn { display: inline-flex; align-items: center; gap: 6px; font-family: "Arial Rounded MT Bold", sans-serif; font-size: 15px; background: var(--light);
+  padding: 4px 12px; border-radius: 999px; }
+.turn i { width: 15px; height: 15px; border-radius: 50%; border: 2.5px solid #2d2d2d; display: inline-block; background: #fff; }
+.turn.b { background: var(--ink); color: #fff; }
+.turn.b i { background: #1d1d1d; border-color: #fff; }
+.boardwrap { position: relative; width: var(--bs); height: var(--bs); }
+.board { width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  border: 8px solid var(--frame); border-radius: 14px; overflow: hidden; box-shadow: 0 8px 0 rgba(0,0,0,.18); background: var(--frame); touch-action: none;
+  user-select: none; -webkit-user-select: none; }
+.sq { position: relative; display: flex; align-items: center; justify-content: center; }
+.play .sq { cursor: pointer; }
+.sq.l { background: var(--light); }
+.sq.d { background: var(--dark); }
+.sq.last::before { content: ""; position: absolute; inset: 0; background: rgba(255, 225, 0, .38); }
+.sq.sel::before { content: ""; position: absolute; inset: 0; background: rgba(255, 190, 0, .7); }
+.sq.mine::before { content: ""; position: absolute; inset: 0; background: rgba(61, 123, 255, .35); }
+.sq.key::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 4px #22a447; z-index: 3; }
+.sq.bad { animation: shake .35s; }
+.sq.bad::before { content: ""; position: absolute; inset: 0; background: rgba(255, 60, 60, .45); }
+.piece { font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Noto Sans Symbols2", "DejaVu Sans", "Arial Unicode MS", serif; line-height: 1;
+  display: inline-block; font-size: calc(var(--bs) * 0.094); position: relative; z-index: 5; pointer-events: none; }
+.piece.w { color: #fff; text-shadow: -1.5px 0 #2d2d2d, 1.5px 0 #2d2d2d, 0 -1.5px #2d2d2d, 0 1.5px #2d2d2d,
+  -1px -1px #2d2d2d, 1px 1px #2d2d2d, -1px 1px #2d2d2d, 1px -1px #2d2d2d, 0 4px 4px rgba(0,0,0,.3); }
+.piece.b { color: #1d1d1d; text-shadow: 0 0 3px rgba(255,255,255,.75), 0 4px 4px rgba(0,0,0,.3); }
+.coord { position: absolute; font-size: 10px; opacity: .6; pointer-events: none; z-index: 1; font-family: sans-serif; }
+.coord.f { bottom: 1px; right: 3px; }
+.coord.r { top: 1px; left: 3px; }
+.ghost { position: fixed; z-index: 70; pointer-events: none; transform: translate(-50%, -60%) scale(1.25); }
+.think { width: var(--bs); height: calc(var(--bs) * .62); background: #fff; border-radius: 22px; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 5px 0 rgba(0,0,0,.08); }
+.think .ollie { height: 78%; }
+.hint { font-size: 14px; color: #6a5a4a; text-align: center; margin: 14px 0 0; }
+.q { display: flex; gap: 10px; align-items: flex-start; background: #fff; border-radius: 22px; padding: 12px 14px 12px 18px; box-shadow: 0 4px 0 rgba(0,0,0,.08); }
+.q p { flex: 1; margin: 0; font-size: clamp(17px, 3.6vw, 21px); line-height: 1.38; }
+.answer { margin: 14px 0 6px; }
+.opts { display: flex; flex-direction: column; gap: 8px; }
+.opts.short { flex-direction: row; flex-wrap: wrap; }
+.opt { font: inherit; font-size: 18px; text-align: left; border: 3px solid transparent; border-radius: 18px; background: #fff; color: var(--ink); cursor: pointer;
+  padding: 9px 14px; display: flex; align-items: center; gap: 12px; box-shadow: 0 3px 0 rgba(0,0,0,.1); }
+.opts.short .opt { flex: 1; min-width: 90px; justify-content: center; }
+.opt b { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 2.5px solid var(--ink); display: inline-flex; align-items: center; justify-content: center;
+  font-family: "Arial Rounded MT Bold", sans-serif; font-weight: normal; }
+.opt.on { border-color: var(--accent); background: #fff3e8; }
+.opt.on b { background: var(--accent); border-color: var(--accent); color: #fff; }
+.stepper { display: flex; align-items: center; gap: 10px; justify-content: center; font-size: 20px; }
+.stepper input { font: inherit; font-size: 30px; width: 84px; text-align: center; padding: 6px; border-radius: 16px; border: 3px solid var(--sky); }
+.stepper .btn { width: 54px; height: 54px; padding: 0; font-size: 28px; }
+.mymove { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap; background: #fff; border-radius: 18px; padding: 10px 14px;
+  font-size: 19px; box-shadow: 0 3px 0 rgba(0,0,0,.08); }
+.mymove b { font-family: "Arial Rounded MT Bold", sans-serif; font-weight: normal; font-size: 24px; }
+.status { min-height: 26px; text-align: center; font-size: 17px; margin: 4px 0; color: #b4471a; }
+.nav { display: flex; gap: 10px; justify-content: space-between; margin-top: 6px; }
+.nav .btn { flex: 1; }
+.nav2 { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 14px; }
+
+/* between + results */
+.center { text-align: center; max-width: 640px; margin: 20px auto 0; }
+.center .art { width: 170px; margin: 0 auto; }
+.center h2 { font-size: clamp(28px, 6vw, 40px); margin: 6px 0; }
+.center p { font-size: 19px; }
+.bigstar { font-size: 64px; line-height: 1; }
+.hero { display: flex; align-items: center; gap: 18px; justify-content: center; margin: 4px 0 14px; }
+.hero .art { width: clamp(110px, 22vw, 160px); flex: none; }
+.hero h2 { font-size: clamp(26px, 5.5vw, 40px); }
+.hero p { margin: 6px 0 0; font-size: 19px; }
+.badge { display: flex; gap: 14px; align-items: stretch; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+.badge > div { background: #fff; border-radius: 24px; padding: 12px 22px; text-align: center; box-shadow: 0 5px 0 rgba(0,0,0,.08); min-width: 200px; }
+.badge .k { font-size: 15px; color: #6a5a4a; }
+.badge .v { font-family: "Arial Rounded MT Bold", sans-serif; font-size: 44px; color: var(--accent); line-height: 1.15; }
+.badge .s { font-size: 14px; }
+.can { text-align: center; font-size: 18px; margin: 0 auto 16px; max-width: 640px; }
+.secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.secrow { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 18px; padding: 8px 14px; box-shadow: 0 3px 0 rgba(0,0,0,.06); }
+.secrow .ic { font-size: 26px; }
+.secrow .t { flex: 1; font-size: 16px; }
+.stars { color: #e09a00; font-size: 22px; letter-spacing: 2px; white-space: nowrap; }
+.secrow .n { font-size: 15px; color: #6a5a4a; white-space: nowrap; }
+details.grownups { margin-top: 18px; font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif; font-size: 15px; line-height: 1.5; }
+details.grownups > summary { font-family: "Arial Rounded MT Bold", sans-serif; font-size: 20px; cursor: pointer; color: var(--accent); }
+details.grownups h3 { font-size: 18px; margin: 16px 0 6px; color: var(--accent); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th { text-align: left; background: var(--light); padding: 6px 8px; font-weight: 600; }
+td { padding: 6px 8px; border-bottom: 1px solid #eadfcc; vertical-align: top; }
+td.c, th.c { text-align: center; }
+tr.stop td { background: #fff3e8; font-weight: 600; }
+.rv { border-bottom: 1px solid #eadfcc; }
+.rv > summary { display: flex; gap: 10px; align-items: baseline; padding: 6px 2px; cursor: pointer; list-style: none; flex-wrap: wrap; }
+.rv > summary::-webkit-details-marker { display: none; }
+.rv .mark { width: 24px; text-align: center; font-weight: 700; }
+.rv .mark.ok { color: #22a447; }
+.rv .mark.no { color: #d0342c; }
+.rv .mark.skip { color: #9a8a7a; }
+.rv .lv { font-size: 12px; background: var(--light); border-radius: 999px; padding: 0 8px; }
+.rv .ya { flex: 1; min-width: 160px; }
+.rvbody { display: flex; gap: 16px; padding: 4px 0 14px 34px; flex-wrap: wrap; align-items: flex-start; }
+.rvbody .boardwrap { --bs: 220px; flex: none; }
+.rvbody .board { border-width: 5px; box-shadow: none; }
+.rvbody .coord { font-size: 8px; }
+.rvbody p { flex: 1; min-width: 200px; margin: 0; }
+.legend { font-size: 13px; color: #6a5a4a; }
+.legend i { display: inline-block; width: 12px; height: 12px; vertical-align: middle; margin: 0 4px 0 8px; }
+
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: flex; align-items: center; justify-content: center; z-index: 80; padding: 16px; }
+.modal { background: #fff; border-radius: 26px; padding: 22px; max-width: 460px; width: 100%; text-align: center; }
+.modal h2 { font-size: 26px; margin-bottom: 8px; }
+.modal p { font-size: 18px; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+@media print {
+  body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  header.bar, .noprint, .overlay { display: none !important; }
+  .card, .badge > div, .secrow { box-shadow: none; border: 1px solid #ddd; }
+  .rv { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <button class="btn icon" id="home" aria-label="Start screen">🏠</button>
+  <h1>Ollie's Chess Check-Up</h1>
+  <button class="btn icon" id="voice" aria-label="Read questions aloud"></button>
+</header>
+<main>
+  <section id="start" hidden>
+    <div class="hello"><div class="art" id="artWave"></div>
+      <div class="bubble">Hi! I'm Ollie. Let's see how much chess you know! There are 60 puzzles. They start easy and get super tricky, even for grown-ups.
+        If a puzzle is too hard, tap <b>Skip</b>. That's OK!</div></div>
+    <div class="card">
+      <div class="field"><label for="name">Your name</label><input id="name" maxlength="30" autocomplete="off" placeholder="(you can skip this)"></div>
+      <div class="row"><button class="btn primary" id="go">Start ▶</button><button class="btn" id="restart" hidden>Start over</button></div>
+      <p class="note" id="progressNote"></p>
+    </div>
+    <div class="card grown">
+      <h2>For grown-ups</h2>
+      <p>This is the online version of the printable Check-Up. The child answers on the screen; when they tap <b>Finish</b>, the page works out a level from 1 to 9 and an estimated rating from 100 to 1800+ (the chess.com scale), with a review of every puzzle.</p>
+      <p>Young children: one section per sitting works well, and the page remembers where they stopped. Read questions aloud if needed (or turn on 🔊), but please give no hints. Skipped puzzles count as not solved, and nothing is marked right or wrong until the end.</p>
+      <p>Answers are saved only in this browser on this device. Nothing is sent anywhere. The printable booklet, the guide and the scoring rules are on the <a href="../">Check-Up page</a>.</p>
+      <div id="pastBox" hidden><h2>Past results on this device</h2><ul class="past" id="past"></ul></div>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+    <div class="dots" id="dots"></div>
+    <div class="stage">
+      <div class="left">
+        <div class="topline"><span class="pid" id="pid"></span><span class="count" id="count"></span><span class="turn" id="turn"></span></div>
+        <div class="boardwrap" id="boardwrap"><div class="board play" id="board" role="grid" aria-label="Chess board"></div></div>
+        <div class="think" id="think"></div>
+        <p class="hint" id="moveHint">Tap a piece, then tap the square where it goes. (You can drag it too.)</p>
+      </div>
+      <div class="right">
+        <div class="q"><p id="ask"></p><button class="btn icon" id="readq" aria-label="Read it to me">🔊</button></div>
+        <div class="answer" id="answer"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="nav"><button class="btn" id="back">◀ Back</button><button class="btn" id="next">Skip ▶</button></div>
+        <div class="nav2"><button class="btn small" id="nextSection">Next section ⏭</button><button class="btn small" id="finish">Finish ✓</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="between" hidden>
+    <div class="center">
+      <div class="art" id="artCheer1"></div>
+      <h2 id="btTitle"></h2>
+      <div class="bigstar">⭐</div>
+      <p id="btText"></p>
+      <div class="row" id="btButtons"></div>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <div class="hero"><div class="art" id="artCheer2"></div><div><h2 id="rsTitle"></h2><p id="rsSolved"></p><p class="legend" id="rsDate"></p></div></div>
+    <div class="badge"><div><div class="k">Level</div><div class="v" id="rsLevel"></div><div class="s" id="rsBand"></div></div>
+      <div><div class="k">Estimated rating</div><div class="v" id="rsRating"></div><div class="s">like chess.com, ±150</div></div></div>
+    <p class="can" id="rsCan"></p>
+    <div class="secs" id="rsSecs"></div>
+    <div class="row noprint"><button class="btn primary" id="rsHome">🏠 Start screen</button><button class="btn" id="rsPrint">🖨 Print</button><a class="btn" href="../../">▶ Play Chess Adventure</a></div>
+    <details class="grownups card" id="rsGrown">
+      <summary>For grown-ups: how it was scored</summary>
+      <p id="rsText"></p>
+      <table id="rsLevels"></table>
+      <h3>What to practise next</h3>
+      <div id="rsNext"></div>
+      <h3>Every puzzle</h3>
+      <p class="legend">Tap a puzzle to see it.<i style="background: rgba(61, 123, 255, .35)"></i>the child's move<i style="box-shadow: inset 0 0 0 3px #22a447"></i>the right move</p>
+      <div id="rsReview"></div>
+      <h3>Good to know</h3>
+      <p>This is an estimate, within about ±150 points. Puzzles show what a child can see when told there is something to find; games also test patience and nerves. To confirm, play 3–5 games against a computer near this rating. Retake the Check-Up in 3–6 months; scores rise a little because some puzzles are remembered.</p>
+    </details>
+  </section>
+</main>
+<div class="overlay" id="overlay" hidden><div class="modal" role="dialog" aria-modal="true"><h2 id="mTitle"></h2><p id="mText"></p><div class="row" id="mButtons"></div></div></div>
+
+<script>/* Ollie's Chess Check-Up scoring, shared by the printed guide (tools/build-assessment.js) and the online Check-Up.
+ * A level is passed when at least 60% of its puzzles are solved (the pass mark). Climb from Level 1 and stop at the
+ * first level that is not passed when the next one is not passed either. A failed level below a passed one is a gap.
+ * Rating = start of that level's band + up to 200 points for its solved puzzles. If the climb never stops: 1800+.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.CheckupScoring = factory();
+})(this, function () {
+  'use strict';
+  function passMark(count) { return Math.ceil(0.6 * count); }
+  function points(count, solved) { var pm = passMark(count); return solved >= pm ? 200 : Math.round(200 * solved / pm); }
+  function list(ns) { return ns.length < 2 ? String(ns[0]) : ns.slice(0, -1).join(', ') + ' and ' + ns[ns.length - 1]; }
+
+  // levels: [{ n, from, to }]; counts and solved: { levelNumber: number of puzzles }.
+  function rate(levels, counts, solved) {
+    var rows = levels.map(function (l) {
+      var c = counts[l.n] || 0, s = solved[l.n] || 0;
+      return { n: l.n, from: l.from, to: l.to, count: c, solved: s, pass: passMark(c), passed: s >= passMark(c), gap: false, stop: false };
+    });
+    var at = -1;
+    for (var i = 0; i < rows.length; i++) {
+      if (!rows[i].passed && (i + 1 >= rows.length || !rows[i + 1].passed)) { at = i; break; }
+    }
+    var below = at < 0 ? rows : rows.slice(0, at);
+    var passed = below.filter(function (r) { return r.passed; }).map(function (r) { return r.n; });
+    var text = !passed.length ? 'No level is passed yet. ' :
+      passed.length === 1 ? 'Level ' + passed[0] + ' is passed. ' : 'Levels ' + list(passed) + ' are passed. ';
+    var gaps = below.filter(function (r) { return !r.passed; });
+    gaps.forEach(function (r) {
+      r.gap = true;
+      text += 'Level ' + r.n + ' is not (' + r.solved + ' of ' + r.count + '; the pass mark is ' + r.pass + '), but Level ' + (r.n + 1) +
+        ' is, so Level ' + r.n + ' is a gap to practise. ';
+    });
+    var gapNs = gaps.map(function (r) { return r.n; });
+    if (at < 0) {
+      return { rows: rows, level: rows[rows.length - 1].n, top: true, rating: 1800, label: '1800+', points: 0, gaps: gapNs,
+        text: text + 'Even the top level is passed, so the estimated rating is 1800+.' };
+    }
+    var r = rows[at], pts = points(r.count, r.solved);
+    r.stop = true;
+    text += 'Level ' + r.n + ' is not passed' + (at + 1 < rows.length ? ' and Level ' + (r.n + 1) + " isn't either" : '') +
+      ', so the child is at Level ' + r.n + '. Rating ≈ ' + r.from + ' + ' + pts + ' points for ' + r.solved + ' solved = about ' + (r.from + pts) + '.';
+    return { rows: rows, level: r.n, top: false, rating: r.from + pts, label: String(r.from + pts), points: pts, gaps: gapNs, text: text };
+  }
+
+  return { passMark: passMark, points: points, rate: rate };
+});
+</script>
+<script>window.CHECKUP = {"title":"Ollie's Chess Check-Up","levels":[{"n":1,"from":100,"to":299,"can":"Knows how the pieces move and what check means."},{"n":2,"from":300,"to":499,"can":"Spots mate in one and free pieces; knows checkmate, promotion and how pawns capture."},{"n":3,"from":500,"to":699,"can":"Uses simple forks and back-rank mates; knows stalemate and castling; avoids early traps."},{"n":4,"from":700,"to":899,"can":"Sees pins and threats, captures safely; knows en passant and the square of the pawn."},{"n":5,"from":900,"to":1099,"can":"Finds skewers, discovered attacks and two-move mates; knows basic drawn endings."},{"n":6,"from":1100,"to":1299,"can":"Combines two ideas (check plus fork); knows the opposition and opening tricks."},{"n":7,"from":1300,"to":1499,"can":"Removes defenders, finds quiet key moves, wins pawn endings by breakthrough."},{"n":8,"from":1500,"to":1699,"can":"Calculates deflections and sacrifices; knows the Lucena position and opening traps."},{"n":9,"from":1700,"to":1899,"can":"Finds deeper sacrifices (mate in 3, the Greek gift) and the Philidor defence."}],"practiceByLevel":[{"from":1,"to":2,"text":"Season 1 of Chess Adventure, a chapter a day. Lots of short games with a grown-up. Practise checkmate in 1 with Queen and King."},{"from":3,"to":4,"text":"Season 2 of Chess Adventure (forks, guards, castling, en passant, promotion choices). Before every move, ask: \"What does my opponent threaten?\""},{"from":5,"to":6,"text":"10 minutes of tactics puzzles a day (pins, skewers, discovered attacks, mate in 2). Play slower games (15+10) and review them. Learn the opposition and the square of the pawn."},{"from":7,"to":9,"text":"Harder puzzles that need calculation, basic Rook endings (Lucena and Philidor), a simple opening repertoire, and longer games in a club or scholastic tournament. A coach helps a lot from here."}],"sections":[{"id":"R","title":"Rules of the Game","icon":"📜","intro":"How the pieces move, check, checkmate and the special rules.","practice":"Season 1 of Chess Adventure (Hello, Board! to Checkmate!), then \"The Castle Move\", \"En Passant!\" and \"Pick Your Piece!\" in Season 2."},{"id":"C","title":"Checkmate","icon":"👑","intro":"Find the move that checkmates. For \"mate in 2\" or \"mate in 3\", make the first move.","practice":"Checkmate!, Checkmate Club and Two-Step Checkmate in Chess Adventure; then mate-in-2 puzzle sets."},{"id":"T","title":"Tactics: Win Something!","icon":"⚡","intro":"Find the move that wins material, or more.","practice":"Yum! Eating Pieces, Treasure Points, Guards! and Two at Once! in Chess Adventure; then daily tactics puzzles."},{"id":"O","title":"Openings","icon":"🚀","intro":"How to start a game, and the early traps to know.","practice":"Play many games focusing on centre pawns, Knights and Bishops out, and castling early. Learn the Scholar's mate defence and Légal's trap."},{"id":"M","title":"Middlegame and Defence","icon":"🛡️","intro":"Count attackers and defenders, spot the opponent's threat, and use pins and traps.","practice":"Watch Out!, Save the King!, Sneaky Attackers and Guards! in Chess Adventure. Before every move ask: \"What does my opponent threaten?\""},{"id":"E","title":"Endgames","icon":"🏁","intro":"Few pieces left: checkmate, promote pawns, and know which endings win.","practice":"To the Other Side!, Pick Your Piece! and Oops, a Tie! in Chess Adventure; then King and Pawn endings (opposition, square of the pawn)."}],"puzzles":[{"id":"R1","s":0,"level":1,"kind":"count","ask":"How many squares can the white Rook move to?","idea":"Rook moves","explain":"7 along the d-file and 7 along the 4th rank.","pos":"k7/8/8/8/3R4/8/8/7K","turn":"w","last":null,"key":14},{"id":"R2","s":0,"level":1,"kind":"count","ask":"How many squares can the white King move to?","idea":"King moves","explain":"One step in every direction: 8 squares.","pos":"k7/8/8/8/4K3/8/8/8","turn":"w","last":null,"key":8},{"id":"R3","s":0,"level":1,"kind":"choice","ask":"Is the black King in check?","idea":"Check","explain":"The Bishop on b5 attacks e8 along the diagonal b5-c6-d7-e8.","options":["Yes","No"],"pos":"4k3/8/8/1B6/8/8/8/4K3","turn":"b","last":null,"key":"A"},{"id":"R4","s":0,"level":2,"kind":"count","ask":"How many squares can the white Knight jump to?","idea":"Knight moves near the edge","explain":"e2, f3 and h3. Knights near the edge have fewer moves.","pos":"k7/8/8/8/8/8/8/6NK","turn":"w","last":null,"key":3},{"id":"R5","s":0,"level":2,"kind":"choice","ask":"Which black piece can the white Pawn capture?","idea":"Pawns capture diagonally","explain":"Pawns move straight but capture one square diagonally forward, so only d5.","options":["The Knight on e5","The Bishop on d5","Both of them"],"pos":"k7/8/8/3bn3/4P3/8/8/7K","turn":"w","last":null,"key":"B"},{"id":"R6","s":0,"level":2,"kind":"choice","ask":"Black to move. What is it?","idea":"Checkmate","explain":"The Queen attacks the King and is protected by the white King; the black King has no safe square.","options":["Check","Checkmate","Stalemate (a tie)"],"pos":"k7/1Q6/1K6/8/8/8/8/8","turn":"b","last":null,"key":"B"},{"id":"R7","s":0,"level":2,"kind":"choice","ask":"A Pawn reaches the other side of the board. What can it become?","idea":"Promotion","explain":"The player chooses a Queen, Rook, Bishop or Knight (never a King or a Pawn).","options":["Only a Queen","A Queen, a Rook, a Bishop or a Knight","Any piece, even a King"],"key":"B"},{"id":"R8","s":0,"level":3,"kind":"choice","ask":"Black to move. What is it?","idea":"Stalemate","explain":"Black is not in check but has no legal move, so the game is a draw.","options":["Check","Checkmate","Stalemate (a tie)"],"pos":"k7/2Q5/1K6/8/8/8/8/8","turn":"b","last":null,"key":"C"},{"id":"R9","s":0,"level":3,"kind":"choice","ask":"Which castling move can White play now?","idea":"Castling rules","explain":"The black Bishop attacks f1, and the King may not castle across an attacked square. Long castling is fine.","options":["Short castling (O-O) only","Long castling (O-O-O) only","Both","Neither"],"pos":"r3k2r/8/8/8/2b5/8/8/R3K2R","turn":"w","last":null,"key":"B"},{"id":"R10","s":0,"level":4,"kind":"move","ask":"Black's Pawn just jumped from d7 to d5. Make the White move that captures it.","idea":"En passant","explain":"exd6 en passant: the e5 Pawn captures as if the black Pawn had moved only one square.","pos":"4k3/8/8/3pP3/8/8/8/4K3","turn":"w","last":["d7","d5"],"legal":[["e5e6","e6"],["e5d6","exd6"],["e1d2","Kd2"],["e1e2","Ke2"],["e1f2","Kf2"],["e1f1","Kf1"],["e1d1","Kd1"]],"key":["e5d6"],"keySan":["exd6"]},{"id":"C1","s":1,"level":1,"kind":"mate","ask":"Find checkmate in 1.","idea":"Queen and King","explain":"Qh8 checks along the 8th rank; the white King covers a7 and b7. (Careful: Qc7 is stalemate.)","n":1,"pos":"k7/8/1K6/8/8/8/7Q/8","turn":"w","last":null,"legal":[["b6c7","Kc7"],["b6c6","Kc6"],["b6c5","Kc5"],["b6b5","Kb5"],["b6a5","Ka5"],["b6a6","Ka6"],["h2g3","Qg3"],["h2f4","Qf4"],["h2e5","Qe5"],["h2d6","Qd6"],["h2c7","Qc7"],["h2b8","Qb8+"],["h2h3","Qh3"],["h2h4","Qh4"],["h2h5","Qh5"],["h2h6","Qh6"],["h2h7","Qh7"],["h2h8","Qh8#"],["h2h1","Qh1+"],["h2g1","Qg1"],["h2g2","Qg2+"],["h2f2","Qf2"],["h2e2","Qe2"],["h2d2","Qd2"],["h2c2","Qc2"],["h2b2","Qb2"],["h2a2","Qa2+"]],"key":["h2h8"],"keySan":["Qh8#"]},{"id":"C2","s":1,"level":2,"kind":"mate","ask":"Find checkmate in 1.","idea":"Back-rank mate","explain":"The black King is trapped behind its own pawns.","n":1,"pos":"6k1/5ppp/8/8/8/8/5PPP/3R2K1","turn":"w","last":null,"legal":[["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["d1d2","Rd2"],["d1d3","Rd3"],["d1d4","Rd4"],["d1d5","Rd5"],["d1d6","Rd6"],["d1d7","Rd7"],["d1d8","Rd8#"],["d1e1","Re1"],["d1f1","Rf1"],["d1c1","Rc1"],["d1b1","Rb1"],["d1a1","Ra1"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d1d8"],"keySan":["Rd8#"]},{"id":"C3","s":1,"level":2,"kind":"mate","ask":"Find checkmate in 1.","idea":"Rook and King","explain":"Rd8 checks; the white King covers g7 and h7. (Rg7 would be stalemate.)","n":1,"pos":"7k/3R4/6K1/8/8/8/8/8","turn":"w","last":null,"legal":[["d7d8","Rd8#"],["d7e7","Re7"],["d7f7","Rf7"],["d7g7","Rg7"],["d7h7","Rh7+"],["d7d6","Rd6"],["d7d5","Rd5"],["d7d4","Rd4"],["d7d3","Rd3"],["d7d2","Rd2"],["d7d1","Rd1"],["d7c7","Rc7"],["d7b7","Rb7"],["d7a7","Ra7"],["g6f7","Kf7"],["g6h6","Kh6"],["g6h5","Kh5"],["g6g5","Kg5"],["g6f5","Kf5"],["g6f6","Kf6"]],"key":["d7d8"],"keySan":["Rd8#"]},{"id":"C4","s":1,"level":3,"kind":"mate","ask":"Find checkmate in 1.","idea":"Smothered mate","explain":"The King is boxed in by its own Rook and pawns, and nobody can capture the Knight.","n":1,"pos":"6rk/6pp/7N/8/8/8/8/6K1","turn":"w","last":null,"legal":[["h6f7","Nf7#"],["h6g8","Nxg8"],["h6g4","Ng4"],["h6f5","Nf5"],["g1f2","Kf2"],["g1g2","Kg2"],["g1h2","Kh2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["h6f7"],"keySan":["Nf7#"]},{"id":"C5","s":1,"level":4,"kind":"mate","ask":"Find checkmate in 1.","idea":"Rook and Knight (Arabian mate)","explain":"The Knight protects the Rook on h7 and covers g8.","n":1,"pos":"7k/R7/5N2/8/8/8/8/6K1","turn":"w","last":null,"legal":[["a7a8","Ra8+"],["a7b7","Rb7"],["a7c7","Rc7"],["a7d7","Rd7"],["a7e7","Re7"],["a7f7","Rf7"],["a7g7","Rg7"],["a7h7","Rh7#"],["a7a6","Ra6"],["a7a5","Ra5"],["a7a4","Ra4"],["a7a3","Ra3"],["a7a2","Ra2"],["a7a1","Ra1"],["f6d7","Nd7"],["f6e8","Ne8"],["f6g8","Ng8"],["f6h7","Nh7"],["f6h5","Nh5"],["f6g4","Ng4"],["f6e4","Ne4"],["f6d5","Nd5"],["g1f2","Kf2"],["g1g2","Kg2"],["g1h2","Kh2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["a7h7"],"keySan":["Rh7#"]},{"id":"C6","s":1,"level":5,"kind":"mate","ask":"Find checkmate in 2. Make the first move.","idea":"Rook ladder","explain":"One Rook closes the 7th rank, then the other mates on the 8th: 1.Rb7 Kg8 2.Ra8# (or 1.Ra7 Kg8 2.Rb8#).","n":2,"pos":"7k/8/R7/1R6/8/8/8/6K1","turn":"w","last":null,"legal":[["a6a7","Ra7"],["a6a8","Ra8+"],["a6b6","Rab6"],["a6c6","Rc6"],["a6d6","Rd6"],["a6e6","Re6"],["a6f6","Rf6"],["a6g6","Rg6"],["a6h6","Rh6+"],["a6a5","Raa5"],["a6a4","Ra4"],["a6a3","Ra3"],["a6a2","Ra2"],["a6a1","Ra1"],["b5b6","Rbb6"],["b5b7","Rb7"],["b5b8","Rb8+"],["b5c5","Rc5"],["b5d5","Rd5"],["b5e5","Re5"],["b5f5","Rf5"],["b5g5","Rg5"],["b5h5","Rh5+"],["b5b4","Rb4"],["b5b3","Rb3"],["b5b2","Rb2"],["b5b1","Rb1"],["b5a5","Rba5"],["g1f2","Kf2"],["g1g2","Kg2"],["g1h2","Kh2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["a6a7","b5b7"],"keySan":["Ra7","Rb7"]},{"id":"C7","s":1,"level":6,"kind":"mate","ask":"Find checkmate in 2. Make the first move.","idea":"Doubled Rooks on the back rank","explain":"1.Rd8+ Rxd8 2.Rxd8#. The defender is removed by a sacrifice.","n":2,"pos":"2r3k1/5ppp/8/8/8/8/3R1PPP/3R2K1","turn":"w","last":null,"legal":[["d2d3","Rd3"],["d2d4","Rd4"],["d2d5","Rd5"],["d2d6","Rd6"],["d2d7","Rd7"],["d2d8","Rd8+"],["d2e2","Re2"],["d2c2","Rc2"],["d2b2","Rb2"],["d2a2","Ra2"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["d1e1","Re1"],["d1f1","Rf1"],["d1c1","Rc1"],["d1b1","Rb1"],["d1a1","Ra1"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d2d8"],"keySan":["Rd8+"]},{"id":"C8","s":1,"level":7,"kind":"mate","ask":"Find checkmate in 2. Make the first move.","idea":"Quiet King move","explain":"1.Kg6! Kg8 2.Ra8#. The King helps before the Rook checks.","n":2,"pos":"7k/8/8/5K2/8/8/8/R7","turn":"w","last":null,"legal":[["f5e6","Ke6"],["f5f6","Kf6"],["f5g6","Kg6"],["f5g5","Kg5"],["f5g4","Kg4"],["f5f4","Kf4"],["f5e4","Ke4"],["f5e5","Ke5"],["a1a2","Ra2"],["a1a3","Ra3"],["a1a4","Ra4"],["a1a5","Ra5"],["a1a6","Ra6"],["a1a7","Ra7"],["a1a8","Ra8+"],["a1b1","Rb1"],["a1c1","Rc1"],["a1d1","Rd1"],["a1e1","Re1"],["a1f1","Rf1"],["a1g1","Rg1"],["a1h1","Rh1+"]],"key":["f5g6"],"keySan":["Kg6"]},{"id":"C9","s":1,"level":8,"kind":"mate","ask":"Find checkmate in 2. Make the first move.","idea":"Queen sacrifice and smothered mate","explain":"1.Qg8+! Rxg8 2.Nf7#. The Knight guards g8, so only the Rook can take.","n":2,"pos":"5r1k/6pp/7N/3Q4/8/8/6PP/6K1","turn":"w","last":null,"legal":[["h6f7","Nf7+"],["h6g8","Ng8"],["h6g4","Ng4"],["h6f5","Nf5"],["d5c6","Qc6"],["d5b7","Qb7"],["d5a8","Qa8"],["d5d6","Qd6"],["d5d7","Qd7"],["d5d8","Qd8"],["d5e6","Qe6"],["d5f7","Qf7"],["d5g8","Qg8+"],["d5e5","Qe5"],["d5f5","Qf5"],["d5g5","Qg5"],["d5h5","Qh5"],["d5e4","Qe4"],["d5f3","Qf3"],["d5d4","Qd4"],["d5d3","Qd3"],["d5d2","Qd2"],["d5d1","Qd1"],["d5c4","Qc4"],["d5b3","Qb3"],["d5a2","Qa2"],["d5c5","Qc5"],["d5b5","Qb5"],["d5a5","Qa5"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["g1h1","Kh1"]],"key":["d5g8"],"keySan":["Qg8+"]},{"id":"C10","s":1,"level":9,"kind":"mate","ask":"Find checkmate in 3. Make the first move.","idea":"Knight check, Queen sacrifice, Rook mate","explain":"1.Ne7+ Kh8 2.Qxh7+! Kxh7 3.Rh3#. The Knight on e7 covers g6 and g8.","n":3,"pos":"5rk1/5ppp/8/3N3Q/8/3R4/5PPP/6K1","turn":"w","last":null,"legal":[["d5b6","Nb6"],["d5c7","Nc7"],["d5e7","Ne7+"],["d5f6","Nf6+"],["d5f4","Nf4"],["d5e3","Ne3"],["d5c3","Nc3"],["d5b4","Nb4"],["h5g6","Qg6"],["h5f7","Qxf7+"],["h5h6","Qh6"],["h5h7","Qxh7+"],["h5h4","Qh4"],["h5h3","Qh3"],["h5g4","Qg4"],["h5f3","Qf3"],["h5e2","Qe2"],["h5d1","Qd1"],["h5g5","Qg5"],["h5f5","Qf5"],["h5e5","Qe5"],["d3d4","Rd4"],["d3e3","Re3"],["d3f3","Rf3"],["d3g3","Rg3"],["d3h3","Rh3"],["d3d2","Rd2"],["d3d1","Rd1"],["d3c3","Rc3"],["d3b3","Rb3"],["d3a3","Ra3"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d5e7"],"keySan":["Ne7+"]},{"id":"T1","s":2,"level":2,"kind":"move","ask":"Find the best move for White.","idea":"Free piece","explain":"The black Queen is undefended. Take it!","pos":"4k3/p7/8/3q4/8/2N5/7P/4K3","turn":"w","last":null,"legal":[["c3a4","Na4"],["c3b5","Nb5"],["c3d5","Nxd5"],["c3e4","Ne4"],["c3e2","Ne2"],["c3d1","Nd1"],["c3b1","Nb1"],["c3a2","Na2"],["h2h3","h3"],["h2h4","h4"],["e1e2","Ke2"],["e1f2","Kf2"],["e1f1","Kf1"]],"key":["c3d5"],"keySan":["Nxd5"]},{"id":"T2","s":2,"level":3,"kind":"move","ask":"Find the move that wins material.","idea":"Knight fork","explain":"Nc7+ attacks the King and the Rook at the same time.","pos":"r3k3/7p/8/1N6/8/8/5PP1/4K3","turn":"w","last":null,"legal":[["b5a7","Na7"],["b5c7","Nc7+"],["b5d6","Nd6+"],["b5d4","Nd4"],["b5c3","Nc3"],["b5a3","Na3"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["e1d2","Kd2"],["e1e2","Ke2"],["e1f1","Kf1"],["e1d1","Kd1"]],"key":["b5c7"],"keySan":["Nc7+"]},{"id":"T3","s":2,"level":3,"kind":"move","ask":"Find the move that wins material.","idea":"Pawn fork","explain":"d4 attacks the Knight and the Rook. Black can only save one.","pos":"6k1/pp3ppp/8/2n1r3/8/8/PP1P1PPP/R5K1","turn":"w","last":null,"legal":[["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["b2b4","b4"],["d2d3","d3"],["d2d4","d4"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["a1b1","Rb1"],["a1c1","Rc1"],["a1d1","Rd1"],["a1e1","Re1"],["a1f1","Rf1"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d2d4"],"keySan":["d4"]},{"id":"T4","s":2,"level":4,"kind":"move","ask":"Find the move that wins material.","idea":"Pin","explain":"Re1 pins the Queen to the King. 1...Qxe1+ 2.Kxe1 trades a Rook for the Queen.","pos":"4k3/6pp/8/4q3/8/8/PPP2KPP/R7","turn":"w","last":null,"legal":[["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["b2b4","b4"],["c2c3","c3"],["c2c4","c4"],["f2f3","Kf3"],["f2g1","Kg1"],["f2f1","Kf1"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["a1b1","Rb1"],["a1c1","Rc1"],["a1d1","Rd1"],["a1e1","Re1"],["a1f1","Rf1"],["a1g1","Rg1"],["a1h1","Rh1"]],"key":["a1e1"],"keySan":["Re1"]},{"id":"T5","s":2,"level":5,"kind":"move","ask":"Find the move that wins material.","idea":"Skewer","explain":"Re1+ checks the King; when it moves, Rxe8 wins the Queen behind it.","pos":"4q3/8/8/4k3/8/8/8/R5K1","turn":"w","last":null,"legal":[["a1a2","Ra2"],["a1a3","Ra3"],["a1a4","Ra4"],["a1a5","Ra5+"],["a1a6","Ra6"],["a1a7","Ra7"],["a1a8","Ra8"],["a1b1","Rb1"],["a1c1","Rc1"],["a1d1","Rd1"],["a1e1","Re1+"],["a1f1","Rf1"],["g1f2","Kf2"],["g1g2","Kg2"],["g1h2","Kh2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["a1e1"],"keySan":["Re1+"]},{"id":"T6","s":2,"level":5,"kind":"move","ask":"Find the move that wins material.","idea":"Discovered attack with check","explain":"Ne6+ checks the King and uncovers the Bishop on b2 against the Queen on h8.","pos":"5k1q/p7/8/8/3N4/8/1B4PP/6K1","turn":"w","last":null,"legal":[["d4b5","Nb5"],["d4c6","Nc6"],["d4e6","Ne6+"],["d4f5","Nf5"],["d4f3","Nf3"],["d4e2","Ne2"],["d4c2","Nc2"],["d4b3","Nb3"],["b2a3","Ba3+"],["b2c3","Bc3"],["b2c1","Bc1"],["b2a1","Ba1"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["g1f2","Kf2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d4e6"],"keySan":["Ne6+"]},{"id":"T7","s":2,"level":6,"kind":"move","ask":"Find the move that wins material.","idea":"Queen fork with check","explain":"Qd4+ checks the King and attacks the Rook on a7 (1.Qd8+ Kg7 2.Qd4+ also works).","pos":"7k/rp5p/4b1p1/8/8/8/5PPP/3Q2K1","turn":"w","last":null,"legal":[["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["d1c2","Qc2"],["d1b3","Qb3"],["d1a4","Qa4"],["d1d2","Qd2"],["d1d3","Qd3"],["d1d4","Qd4+"],["d1d5","Qd5"],["d1d6","Qd6"],["d1d7","Qd7"],["d1d8","Qd8+"],["d1e2","Qe2"],["d1f3","Qf3"],["d1g4","Qg4"],["d1h5","Qh5"],["d1e1","Qe1"],["d1f1","Qf1"],["d1c1","Qc1"],["d1b1","Qb1"],["d1a1","Qa1+"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["d1d4","d1d8"],"keySan":["Qd4+","Qd8+"]},{"id":"T8","s":2,"level":7,"kind":"move","ask":"Find the move that wins material.","idea":"Remove the defender","explain":"Bxc6 removes the Knight that guards d4; after ...bxc6, Rxd4 wins a piece.","pos":"6k1/1p3ppp/2n5/1B6/3b4/8/5PPP/3R2K1","turn":"w","last":null,"legal":[["b5a6","Ba6"],["b5c6","Bxc6"],["b5c4","Bc4"],["b5d3","Bd3"],["b5e2","Be2"],["b5f1","Bf1"],["b5a4","Ba4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["d1d2","Rd2"],["d1d3","Rd3"],["d1d4","Rxd4"],["d1e1","Re1"],["d1f1","Rf1"],["d1c1","Rc1"],["d1b1","Rb1"],["d1a1","Ra1"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["b5c6"],"keySan":["Bxc6"]},{"id":"T9","s":2,"level":8,"kind":"move","ask":"Find the move that wins material.","idea":"Decoy, then a Knight fork","explain":"1.Rh8+! Kxh8 (forced) 2.Nf7+ forks King and Queen, and 3.Nxd8 wins the Queen for a Rook.","pos":"3q1bk1/pp4p1/8/6N1/8/8/PPP5/1K5R","turn":"w","last":null,"legal":[["g5e6","Ne6"],["g5f7","Nf7"],["g5h7","Nh7"],["g5h3","Nh3"],["g5f3","Nf3"],["g5e4","Ne4"],["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["b2b4","b4"],["c2c3","c3"],["c2c4","c4"],["b1c1","Kc1"],["b1a1","Ka1"],["h1h2","Rh2"],["h1h3","Rh3"],["h1h4","Rh4"],["h1h5","Rh5"],["h1h6","Rh6"],["h1h7","Rh7"],["h1h8","Rh8+"],["h1g1","Rg1"],["h1f1","Rf1"],["h1e1","Re1"],["h1d1","Rd1"],["h1c1","Rc1"]],"key":["h1h8"],"keySan":["Rh8+"]},{"id":"T10","s":2,"level":9,"kind":"move","ask":"Find the strongest move for White.","idea":"Greek gift sacrifice","explain":"1.Bxh7+! Kxh7 2.Ng5+ and the Queen joins the attack on the bare King.","pos":"r1bq1rk1/pppn1ppp/2n1p3/3pP3/1b1P4/2NB1N2/PPP2PPP/R1BQK2R","turn":"w","last":null,"legal":[["d3c4","Bc4"],["d3b5","Bb5"],["d3a6","Ba6"],["d3e4","Be4"],["d3f5","Bf5"],["d3g6","Bg6"],["d3h7","Bxh7+"],["d3e2","Be2"],["d3f1","Bf1"],["f3g5","Ng5"],["f3h4","Nh4"],["f3g1","Ng1"],["f3d2","Nd2"],["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["a1b1","Rb1"],["c1d2","Bd2"],["c1e3","Be3"],["c1f4","Bf4"],["c1g5","Bg5"],["c1h6","Bh6"],["d1d2","Qd2"],["d1e2","Qe2"],["e1d2","Kd2"],["e1e2","Ke2"],["e1f1","Kf1"],["h1g1","Rg1"],["h1f1","Rf1"],["e1g1","O-O"]],"key":["d3h7"],"keySan":["Bxh7+"]},{"id":"O1","s":3,"level":2,"kind":"choice","ask":"Which first move helps White control the centre?","idea":"Control the centre","explain":"1.e4 puts a pawn in the centre and opens lines for the Queen and Bishop.","options":["a4","e4","h4"],"pos":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR","turn":"w","last":null,"key":"B"},{"id":"O2","s":3,"level":2,"kind":"choice","ask":"Which is a good plan for the first moves of a game?","idea":"Opening principles","explain":"Develop the minor pieces, control the centre, and castle to keep the King safe.","options":["Bring the Queen out early to attack","Move the Rook pawns first","Bring out Knights and Bishops, then castle"],"key":"C"},{"id":"O3","s":3,"level":3,"kind":"choice","ask":"Black to move. White threatens Qxf7 checkmate! Which move stops it?","idea":"Scholar's mate defence","explain":"...g6 blocks the Queen. After ...Nf6?? or ...a6?? White plays Qxf7#.","options":["Nf6","a6","g6"],"pos":"r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR","turn":"b","last":["d1","h5"],"key":"C"},{"id":"O4","s":3,"level":3,"kind":"mate","ask":"Black to move. Find checkmate in 1.","idea":"Fool's mate","explain":"Weakening the King with f3 and g4 allows ...Qh4#.","n":1,"pos":"rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR","turn":"b","last":["g2","g4"],"legal":[["b8c6","Nc6"],["b8a6","Na6"],["d8e7","Qe7"],["d8f6","Qf6"],["d8g5","Qg5"],["d8h4","Qh4#"],["e8e7","Ke7"],["f8e7","Be7"],["f8d6","Bd6"],["f8c5","Bc5"],["f8b4","Bb4"],["f8a3","Ba3"],["g8h6","Nh6"],["g8f6","Nf6"],["g8e7","Ne7"],["a7a6","a6"],["a7a5","a5"],["b7b6","b6"],["b7b5","b5"],["c7c6","c6"],["c7c5","c5"],["d7d6","d6"],["d7d5","d5"],["f7f6","f6"],["f7f5","f5"],["g7g6","g6"],["g7g5","g5"],["h7h6","h6"],["h7h5","h5"],["e5e4","e4"]],"key":["d8h4"],"keySan":["Qh4#"]},{"id":"O5","s":3,"level":4,"kind":"choice","ask":"White to move. Which move keeps the King safest?","idea":"Castle early","explain":"Castling tucks the King away and brings the Rook toward the centre.","options":["Ke2","O-O","Rg1"],"pos":"r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R","turn":"w","last":["g8","f6"],"key":"B"},{"id":"O6","s":3,"level":5,"kind":"move","ask":"White to move. White gave up a Knight. Find the best move.","idea":"Punish a weak King (Damiano defence)","explain":"Qh5+ attacks the King; after ...g6 Qxe5+ forks King and Rook, and after ...Ke7 Qxe5+ wins back more than the Knight.","pos":"rnbqkbnr/pppp2pp/8/4p3/4P3/8/PPPP1PPP/RNBQKB1R","turn":"w","last":["f6","e5"],"legal":[["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["b2b4","b4"],["c2c3","c3"],["c2c4","c4"],["d2d3","d3"],["d2d4","d4"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["b1a3","Na3"],["b1c3","Nc3"],["d1e2","Qe2"],["d1f3","Qf3"],["d1g4","Qg4"],["d1h5","Qh5+"],["e1e2","Ke2"],["f1e2","Be2"],["f1d3","Bd3"],["f1c4","Bc4"],["f1b5","Bb5"],["f1a6","Ba6"],["h1g1","Rg1"]],"key":["d1h5"],"keySan":["Qh5+"]},{"id":"O7","s":3,"level":6,"kind":"move","ask":"Black to move. Black gave up a Knight. How does Black win it back?","idea":"Fork trick","explain":"...d5 forks the Bishop and the Knight, winning the piece back.","pos":"rnbqkb1r/pppp1ppp/8/4p3/2B1N3/8/PPPP1PPP/R1BQK1NR","turn":"b","last":["c3","e4"],"legal":[["b8c6","Nc6"],["b8a6","Na6"],["d8e7","Qe7"],["d8f6","Qf6"],["d8g5","Qg5"],["d8h4","Qh4"],["e8e7","Ke7"],["f8e7","Be7"],["f8d6","Bd6"],["f8c5","Bc5"],["f8b4","Bb4"],["f8a3","Ba3"],["h8g8","Rg8"],["a7a6","a6"],["a7a5","a5"],["b7b6","b6"],["b7b5","b5"],["c7c6","c6"],["c7c5","c5"],["d7d6","d6"],["d7d5","d5"],["f7f6","f6"],["f7f5","f5"],["g7g6","g6"],["g7g5","g5"],["h7h6","h6"],["h7h5","h5"]],"key":["d7d5"],"keySan":["d5"]},{"id":"O8","s":3,"level":7,"kind":"mate","ask":"White to move. Black just took the Queen. Find checkmate in 2. Make the first move.","idea":"Légal's mate","explain":"1.Bxf7+ Ke7 2.Nd5#. Grabbing the Queen was a trap.","n":2,"pos":"rn1qkbnr/ppp2p1p/3p2p1/4N3/2B1P3/2N5/PPPP1PPP/R1BbK2R","turn":"w","last":["g4","d1"],"legal":[["e5c6","Nc6"],["e5d7","Nd7"],["e5f7","Nxf7"],["e5g6","Nxg6"],["e5g4","Ng4"],["e5f3","Nf3"],["e5d3","Nd3"],["c4b5","Bb5+"],["c4a6","Ba6"],["c4d5","Bd5"],["c4e6","Be6"],["c4f7","Bxf7+"],["c4d3","Bd3"],["c4e2","Be2"],["c4f1","Bf1"],["c4b3","Bb3"],["c3a4","Na4"],["c3b5","Nb5"],["c3d5","Nd5"],["c3e2","Ne2"],["c3d1","Nxd1"],["c3b1","Nb1"],["a2a3","a3"],["a2a4","a4"],["b2b3","b3"],["b2b4","b4"],["d2d3","d3"],["d2d4","d4"],["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["a1b1","Rb1"],["e1f1","Kf1"],["e1d1","Kxd1"],["h1g1","Rg1"],["h1f1","Rf1"],["e1g1","O-O"]],"key":["c4f7"],"keySan":["Bxf7+"]},{"id":"O9","s":3,"level":8,"kind":"move","ask":"Black to move. Find the move that traps a White piece.","idea":"Noah's Ark trap","explain":"...c5 hits the Queen, and ...c4 next traps the Bishop on b3.","pos":"r1bqkbnr/2p2ppp/p2p4/1p6/3QP3/1B6/PPP2PPP/RNB1K2R","turn":"b","last":["d1","d4"],"legal":[["a8b8","Rb8"],["a8a7","Ra7"],["c8d7","Bd7"],["c8e6","Be6"],["c8f5","Bf5"],["c8g4","Bg4"],["c8h3","Bh3"],["c8b7","Bb7"],["d8e7","Qe7"],["d8f6","Qf6"],["d8g5","Qg5"],["d8h4","Qh4"],["d8d7","Qd7"],["e8e7","Ke7"],["e8d7","Kd7"],["f8e7","Be7"],["g8h6","Nh6"],["g8f6","Nf6"],["g8e7","Ne7"],["c7c6","c6"],["c7c5","c5"],["f7f6","f6"],["f7f5","f5"],["g7g6","g6"],["g7g5","g5"],["h7h6","h6"],["h7h5","h5"],["a6a5","a5"],["d6d5","d5"],["b5b4","b4"]],"key":["c7c5"],"keySan":["c5"]},{"id":"O10","s":3,"level":9,"kind":"move","ask":"Black to move. White just grabbed a pawn. Punish it!","idea":"Elephant trap","explain":"...Nxd5! If Bxd8, then ...Bb4+ Qd2 Bxd2+ Kxd2 Kxd8 and Black is a piece up.","pos":"r1bqkb1r/pppn1ppp/5n2/3N2B1/3P4/8/PP2PPPP/R2QKBNR","turn":"b","last":["c3","d5"],"legal":[["a8b8","Rb8"],["d8e7","Qe7"],["f8e7","Be7"],["f8d6","Bd6"],["f8c5","Bc5"],["f8b4","Bb4+"],["f8a3","Ba3"],["h8g8","Rg8"],["a7a6","a6"],["a7a5","a5"],["b7b6","b6"],["b7b5","b5"],["c7c6","c6"],["c7c5","c5"],["d7b8","Nb8"],["d7e5","Ne5"],["d7c5","Nc5"],["d7b6","Nb6"],["g7g6","g6"],["h7h6","h6"],["h7h5","h5"],["f6g8","Ng8"],["f6h5","Nh5"],["f6g4","Ng4"],["f6e4","Ne4"],["f6d5","Nxd5"]],"key":["f6d5"],"keySan":["Nxd5"]},{"id":"M1","s":4,"level":2,"kind":"choice","ask":"The white Queen is attacked by a pawn. Which square is safe?","idea":"Move to a safe square","explain":"The Knight on f6 attacks d5 and e4; a4 is safe.","options":["Qd5","Qe4","Qa4"],"pos":"6k1/6pp/5n2/4p3/3Q4/8/6PP/6K1","turn":"w","last":null,"key":"C"},{"id":"M2","s":4,"level":3,"kind":"choice","ask":"White to move. Should White take the pawn on e5 with the Knight?","idea":"Count attackers and defenders","explain":"e5 is attacked once and defended once. 3.Nxe5? Nxe5 loses a Knight for a pawn.","options":["Yes, it wins a pawn","No, the Knight on c6 takes back"],"pos":"r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R","turn":"w","last":["b8","c6"],"key":"B"},{"id":"M3","s":4,"level":3,"kind":"choice","ask":"Black threatens ...Rd1 checkmate. Which move stops it?","idea":"Back-rank defence (an escape square)","explain":"h3 gives the King an escape square. After Qxa7?? or a3?? comes ...Rd1#.","options":["Qxa7","h3","a3"],"pos":"3r2k1/pp3ppp/8/2Q5/8/8/P4PPP/6K1","turn":"w","last":null,"key":"B"},{"id":"M4","s":4,"level":4,"kind":"choice","ask":"The black Knight is guarded twice. Which capture is best?","idea":"Capture with the cheapest piece","explain":"Bxd5 exd5 is a fair trade. Taking with the Rook or Queen loses material to ...exd5.","options":["Qxd5","Rxd5","Bxd5"],"pos":"3q1rk1/pp3ppp/4p3/3n4/8/1B3Q2/PP3PPP/3R2K1","turn":"w","last":null,"key":"C"},{"id":"M5","s":4,"level":4,"kind":"choice","ask":"White to move. What is Black threatening?","idea":"Spot the threat","explain":"Queen and Bishop both hit f2, which only the King defends: ...Qxf2#. (Good defences: g3 or Qe2.)","options":["...Bxf2+","...Qxf2 checkmate","...Qxe4+"],"pos":"rnb1k1nr/pppp1ppp/8/2b1p3/4P2q/P1N5/1PPP1PPP/R1BQKBNR","turn":"w","last":["d8","h4"],"key":"B"},{"id":"M6","s":4,"level":5,"kind":"choice","ask":"Black threatens ...Qxg2 checkmate. Which move stops it?","idea":"Block the attacking line","explain":"f3 blocks the Bishop on b7, so g2 is no longer attacked twice.","options":["h3","f3","Re8"],"pos":"5rk1/pb3ppp/8/6q1/8/8/PB3PPP/3QR1K1","turn":"w","last":null,"key":"B"},{"id":"M7","s":4,"level":5,"kind":"move","ask":"Find the move that traps the black Bishop.","idea":"Trap a piece","explain":"b3 (protected by c2) shuts the Bishop in; the King covers b1, and Kb2 wins it next.","pos":"4k3/6pp/8/8/8/8/bPP3PP/2K5","turn":"w","last":null,"legal":[["b2b3","b3"],["b2b4","b4"],["c2c3","c3"],["c2c4","c4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["c1d2","Kd2"],["c1d1","Kd1"]],"key":["b2b3"],"keySan":["b3"]},{"id":"M8","s":4,"level":6,"kind":"choice","ask":"Black threatens a Knight fork. Which move stops it?","idea":"Stop a fork","explain":"Black threatens ...Nc2+ forking the King and Queen. Bd3 guards c2 (Kd1 also works).","options":["h3","Bd3","Nc3"],"pos":"r2q2k1/pp3ppp/8/8/3n4/4Q3/PP3PPP/RN2KB2","turn":"w","last":null,"key":"B"},{"id":"M9","s":4,"level":7,"kind":"move","ask":"Find the move that wins material.","idea":"Attack the pinned piece","explain":"The Knight is pinned to the King by the Rook. f4 attacks it, and it cannot move away.","pos":"4k3/6pp/3p4/4n3/8/8/5PPP/4R1K1","turn":"w","last":null,"legal":[["f2f3","f3"],["f2f4","f4"],["g2g3","g3"],["g2g4","g4"],["h2h3","h3"],["h2h4","h4"],["e1e2","Re2"],["e1e3","Re3"],["e1e4","Re4"],["e1e5","Rxe5+"],["e1f1","Rf1"],["e1d1","Rd1"],["e1c1","Rc1"],["e1b1","Rb1"],["e1a1","Ra1"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["f2f4"],"keySan":["f4"]},{"id":"M10","s":4,"level":8,"kind":"choice","ask":"Your opponent has an isolated pawn on d5 (no pawns on the c- or e-files to protect it). What is a good plan?","idea":"Pawn weaknesses (isolated pawn)","explain":"Blockade the square in front of the isolated pawn, then pile up on it; no pawn can defend it.","options":["Put a Knight on d4 in front of it, then attack it with more pieces","Trade pawns so it disappears","Push your own pawns past it and ignore it"],"key":"A"},{"id":"E1","s":5,"level":2,"kind":"mate","ask":"Find checkmate in 1.","idea":"Queen and King mate","explain":"Qa8 (or Qg7, protected by the King) checkmates.","n":1,"pos":"6k1/8/6K1/8/8/8/8/Q7","turn":"w","last":null,"legal":[["g6h6","Kh6"],["g6h5","Kh5"],["g6g5","Kg5"],["g6f5","Kf5"],["g6f6","Kf6"],["a1a2","Qa2+"],["a1a3","Qa3"],["a1a4","Qa4"],["a1a5","Qa5"],["a1a6","Qa6"],["a1a7","Qa7"],["a1a8","Qa8#"],["a1b2","Qb2"],["a1c3","Qc3"],["a1d4","Qd4"],["a1e5","Qe5"],["a1f6","Qf6"],["a1g7","Qg7#"],["a1h8","Qh8+"],["a1b1","Qb1"],["a1c1","Qc1"],["a1d1","Qd1"],["a1e1","Qe1"],["a1f1","Qf1"],["a1g1","Qg1"],["a1h1","Qh1"]],"key":["a1a8","a1g7"],"keySan":["Qa8#","Qg7#"]},{"id":"E2","s":5,"level":3,"kind":"mate","ask":"Find checkmate in 1.","idea":"Rook and King mate","explain":"Rh8 checks along the 8th rank; the white King covers a7 and b7.","n":1,"pos":"k7/8/K7/8/8/8/8/7R","turn":"w","last":null,"legal":[["a6b6","Kb6"],["a6b5","Kb5"],["a6a5","Ka5"],["h1h2","Rh2"],["h1h3","Rh3"],["h1h4","Rh4"],["h1h5","Rh5"],["h1h6","Rh6"],["h1h7","Rh7"],["h1h8","Rh8#"],["h1g1","Rg1"],["h1f1","Rf1"],["h1e1","Re1"],["h1d1","Rd1"],["h1c1","Rc1"],["h1b1","Rb1"],["h1a1","Ra1"]],"key":["h1h8"],"keySan":["Rh8#"]},{"id":"E3","s":5,"level":4,"kind":"choice","ask":"White to move. Can the black King catch the Pawn?","idea":"The square of the pawn","explain":"The black King is outside the \"square\" b5-e5-e8-b8, so it is too slow.","options":["Yes, so it is a draw","No, the Pawn becomes a Queen"],"pos":"8/8/8/1P6/8/8/6k1/K7","turn":"w","last":null,"key":"B"},{"id":"E4","s":5,"level":4,"kind":"choice","ask":"White to move. Can the black King catch the Pawn?","idea":"The square of the pawn","explain":"After b5 the black King steps into the square b5-e5-e8-b8 and catches the Pawn.","options":["Yes, so it is a draw","No, the Pawn becomes a Queen"],"pos":"8/8/8/4k3/1P6/8/8/7K","turn":"w","last":null,"key":"A"},{"id":"E5","s":5,"level":5,"kind":"choice","ask":"White to move. Is this a win for White or a draw?","idea":"Rook pawn draw","explain":"With an h-pawn, the defending King in the corner cannot be forced out: it is a draw.","options":["White wins","Draw"],"pos":"7k/8/6K1/7P/8/8/8/8","turn":"w","last":null,"key":"B"},{"id":"E6","s":5,"level":6,"kind":"move","ask":"White to move. Find the only winning move.","idea":"The opposition","explain":"Kd4 takes the opposition; the black King must give way and the white King leads the Pawn home.","pos":"8/8/3k4/8/4K3/8/3P4/8","turn":"w","last":null,"legal":[["e4f5","Kf5"],["e4f4","Kf4"],["e4f3","Kf3"],["e4e3","Ke3"],["e4d3","Kd3"],["e4d4","Kd4"],["d2d3","d3"],["d2d4","d4"]],"key":["e4d4"],"keySan":["Kd4"]},{"id":"E7","s":5,"level":6,"kind":"choice","ask":"White promotes on g8. Which piece wins?","idea":"Underpromotion to avoid stalemate","explain":"g8=Q is stalemate. g8=R leaves the King a move and mates soon.","options":["A Queen (g8=Q)","A Rook (g8=R)"],"pos":"8/6P1/8/8/8/8/8/k1K5","turn":"w","last":null,"key":"B"},{"id":"E8","s":5,"level":7,"kind":"move","ask":"White to move. Find the move that makes a Queen.","idea":"Pawn breakthrough","explain":"1.b6! axb6 2.c6! bxc6 3.a6 (or 1...cxb6 2.a6! bxa6 3.c6) and a Pawn runs through.","pos":"6k1/ppp5/8/PPP5/8/8/8/6K1","turn":"w","last":null,"legal":[["a5a6","a6"],["b5b6","b6"],["c5c6","c6"],["g1f2","Kf2"],["g1g2","Kg2"],["g1h2","Kh2"],["g1h1","Kh1"],["g1f1","Kf1"]],"key":["b5b6"],"keySan":["b6"]},{"id":"E9","s":5,"level":8,"kind":"choice","ask":"This is the famous Lucena position. How does White win?","idea":"Lucena position","explain":"1.Rd1+ Ke7 2.Rd4! (the bridge) then Kc7, Kb6 and the Rook blocks the checks.","options":["Check the black King from behind forever","Push the black King away, then build a \"bridge\" with the Rook on the 4th rank","Trade the Rooks"],"pos":"1K1k4/1P6/8/8/8/8/r7/2R5","turn":"w","last":null,"key":"B"},{"id":"E10","s":5,"level":9,"kind":"choice","ask":"Black to move. Which move holds the draw (the Philidor defence)?","idea":"Philidor defence","explain":"Keep the Rook on the 6th rank so the white King can't advance; check from behind only after the Pawn reaches e6.","options":["...Ra1 (go behind the Pawn)","...Rb6 (stay on the 6th rank)","...Ra8 (back to the 8th rank)"],"pos":"4k3/8/r7/4PK2/8/8/8/7R","turn":"b","last":null,"key":"B"}],"art":{"wave":"\u003csvg viewBox=\"-12 -4 144 136\" >\u003cg class=\"ollie\">\u003cpath d=\"M31 36 L21 5 L52 25 Z M89 36 L99 5 L68 25 Z\" fill=\"#6F4A2E\"/>\u003cellipse cx=\"60\" cy=\"74\" rx=\"46\" ry=\"52\" fill=\"#9B6A43\"/>\u003cpath d=\"M16 64 C3 88 9 109 29 119 C26 98 26 82 31 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(0 30 68)\"/>\u003cpath d=\"M104 64 C117 88 111 109 91 119 C94 98 94 82 89 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(-150 90 68)\"/>\u003cellipse cx=\"60\" cy=\"93\" rx=\"29\" ry=\"29\" fill=\"#F3D9A4\"/>\u003cpath d=\"M42 86 q5 6 10 0 M55 86 q5 6 10 0 M68 86 q5 6 10 0 M48 98 q5 6 10 0 M61 98 q5 6 10 0 M54 110 q5 6 10 0\" stroke=\"#D6AD6C\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"43.5\" cy=\"51.5\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"46.5\" cy=\"48.5\" r=\"2.6\" fill=\"#fff\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"79.5\" cy=\"51.5\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"82.5\" cy=\"48.5\" r=\"2.6\" fill=\"#fff\"/>\u003cpath d=\"M53 66 L67 66 L60 77 Z\" fill=\"#7a2e12\"/>\u003cpath d=\"M54 69 L66 69 L60 78 Z\" fill=\"#E88A10\"/>\u003cpath d=\"M52 63 Q60 58 68 63 L60 71 Z\" fill=\"#FF9F1C\"/>\u003cg fill=\"#FF9F1C\">\u003ccircle cx=\"45\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"51\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"57\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"63\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"69\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"75\" cy=\"124\" r=\"4.5\"/>\u003c/g>\u003c/g>\u003c/svg>","cheer":"\u003csvg viewBox=\"-12 -4 144 136\" >\u003cg class=\"ollie\">\u003cpath d=\"M31 36 L21 5 L52 25 Z M89 36 L99 5 L68 25 Z\" fill=\"#6F4A2E\"/>\u003cellipse cx=\"60\" cy=\"74\" rx=\"46\" ry=\"52\" fill=\"#9B6A43\"/>\u003cpath d=\"M16 64 C3 88 9 109 29 119 C26 98 26 82 31 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(115 30 68)\"/>\u003cpath d=\"M104 64 C117 88 111 109 91 119 C94 98 94 82 89 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(-115 90 68)\"/>\u003cellipse cx=\"60\" cy=\"93\" rx=\"29\" ry=\"29\" fill=\"#F3D9A4\"/>\u003cpath d=\"M42 86 q5 6 10 0 M55 86 q5 6 10 0 M68 86 q5 6 10 0 M48 98 q5 6 10 0 M61 98 q5 6 10 0 M54 110 q5 6 10 0\" stroke=\"#D6AD6C\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"43.5\" cy=\"51.5\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"46.5\" cy=\"48.5\" r=\"2.6\" fill=\"#fff\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"79.5\" cy=\"51.5\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"82.5\" cy=\"48.5\" r=\"2.6\" fill=\"#fff\"/>\u003cpath d=\"M53 66 L67 66 L60 78.2 Z\" fill=\"#7a2e12\"/>\u003cpath d=\"M54 69.8 L66 69.8 L60 79.2 Z\" fill=\"#E88A10\"/>\u003cpath d=\"M52 63 Q60 58 68 63 L60 70.6 Z\" fill=\"#FF9F1C\"/>\u003cg fill=\"#FF9F1C\">\u003ccircle cx=\"45\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"51\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"57\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"63\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"69\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"75\" cy=\"124\" r=\"4.5\"/>\u003c/g>\u003c/g>\u003c/svg>","think":"\u003csvg viewBox=\"-12 -4 144 136\" >\u003cg class=\"ollie\">\u003cpath d=\"M31 36 L21 5 L52 25 Z M89 36 L99 5 L68 25 Z\" fill=\"#6F4A2E\"/>\u003cellipse cx=\"60\" cy=\"74\" rx=\"46\" ry=\"52\" fill=\"#9B6A43\"/>\u003cpath d=\"M16 64 C3 88 9 109 29 119 C26 98 26 82 31 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(0 30 68)\"/>\u003cpath d=\"M104 64 C117 88 111 109 91 119 C94 98 94 82 89 67 Z\" fill=\"#6F4A2E\" transform=\"rotate(0 90 68)\"/>\u003cellipse cx=\"60\" cy=\"93\" rx=\"29\" ry=\"29\" fill=\"#F3D9A4\"/>\u003cpath d=\"M42 86 q5 6 10 0 M55 86 q5 6 10 0 M68 86 q5 6 10 0 M48 98 q5 6 10 0 M61 98 q5 6 10 0 M54 110 q5 6 10 0\" stroke=\"#D6AD6C\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"42\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"44\" cy=\"49\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"47\" cy=\"46\" r=\"2.6\" fill=\"#fff\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"20\" fill=\"#F7E7C4\"/>\u003ccircle cx=\"78\" cy=\"50\" r=\"13.5\" fill=\"#fff\"/>\u003ccircle cx=\"80\" cy=\"49\" r=\"7.5\" fill=\"#2b2222\"/>\u003ccircle cx=\"83\" cy=\"46\" r=\"2.6\" fill=\"#fff\"/>\u003cpath d=\"M52 63 Q60 58 68 63 L60 72 Z\" fill=\"#FF9F1C\"/>\u003cg fill=\"#FF9F1C\">\u003ccircle cx=\"45\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"51\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"57\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"63\" cy=\"124\" r=\"4.5\"/>\u003ccircle cx=\"69\" cy=\"126\" r=\"4.5\"/>\u003ccircle cx=\"75\" cy=\"124\" r=\"4.5\"/>\u003c/g>\u003c/g>\u003c/svg>"}};</script>
+<script>
+(function () {
+  'use strict';
+  var D = window.CHECKUP, S = window.CheckupScoring, P = D.puzzles;
+  var KEY = 'chessCheckup.v1', FILES = 'abcdefgh', LETTERS = 'ABCDEFG', VS15 = '\uFE0E';
+  var GLYPH = { k: '\u265A', q: '\u265B', r: '\u265C', b: '\u265D', n: '\u265E', p: '\u265F' };
+  var NAMES = { k: 'King', q: 'Queen', r: 'Rook', b: 'Bishop', n: 'Knight', p: 'Pawn' };
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  // ---------- saved state (this device only) ----------
+  // run: the Check-Up in progress { name, started, at, answers: { puzzleId: 'e2e4' | 'B' | 7 } }; history: finished ones.
+  var state = load();
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.v === 1) return s; } catch (e) { /* fresh start */ }
+    return { v: 1, run: null, history: [], voice: true, lastName: '' };
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* private mode: keep going without saving */ } }
+  function answered(run) { return Object.keys(run.answers).length; }
+  function inSection(k) { return P.filter(function (p) { return p.s === k; }); }
+  function firstOf(k) { return P.findIndex(function (p) { return p.s === k; }); }
+
+  // ---------- voice ----------
+  var voice = null;
+  function pickVoice() {
+    if (!('speechSynthesis' in window)) return;
+    var vs = speechSynthesis.getVoices().filter(function (v) { return /^en/i.test(v.lang); });
+    var prefs = [/Ava/i, /Samantha/i, /Jenny/i, /Aria/i, /Google US English/i, /female/i, /Karen|Moira|Tessa|Serena|Allison|Susan/i];
+    voice = null;
+    for (var i = 0; i < prefs.length && !voice; i++) voice = vs.find(function (v) { return prefs[i].test(v.name); }) || null;
+    if (!voice) voice = vs.find(function (v) { return /en[-_]US/i.test(v.lang); }) || vs[0] || null;
+  }
+  if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    var t = text.replace(/\.\.\./g, '').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0E}\u{FE0F}]/gu, ' ').replace(/\s+/g, ' ').trim();
+    if (!t) return;
+    var u = new SpeechSynthesisUtterance(t);
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = 'en-US';
+    u.rate = 0.9; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  }
+  function stopVoice() { if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopVoice(); });
+  function paintVoice() { $('voice').textContent = state.voice ? '🔊' : '🔇'; $('voice').setAttribute('aria-pressed', state.voice ? 'true' : 'false'); }
+  function readQuestion() {
+    var p = cur(), t = p.ask;
+    if (p.pos && !/^(White|Black) to move/.test(t)) t = (p.turn === 'w' ? 'White' : 'Black') + ' to move. ' + t;
+    if (p.kind === 'choice') t += ' ' + p.options.map(function (o, i) { return LETTERS[i] + ': ' + o + '.'; }).join(' ');
+    speak(t);
+  }
+
+  // ---------- screens ----------
+  function show(id) {
+    ['start', 'play', 'between', 'results'].forEach(function (s) { $(s).hidden = s !== id; });
+    stopVoice();
+    window.scrollTo(0, 0);
+  }
+  function modal(title, text, buttons) {
+    $('mTitle').textContent = title;
+    $('mText').textContent = text;
+    $('mButtons').innerHTML = '';
+    buttons.forEach(function (b) {
+      var el = document.createElement('button');
+      el.className = 'btn' + (b[2] ? ' ' + b[2] : '');
+      el.textContent = b[0];
+      el.onclick = function () { $('overlay').hidden = true; if (b[1]) b[1](); };
+      $('mButtons').appendChild(el);
+    });
+    $('overlay').hidden = false;
+  }
+
+  function renderStart() {
+    var run = state.run;
+    $('name').value = run ? run.name : (state.lastName || '');
+    $('go').textContent = run ? 'Keep going ▶' : 'Start ▶';
+    $('restart').hidden = !run;
+    $('progressNote').textContent = run ? 'You have answered ' + answered(run) + ' of ' + P.length + ' puzzles so far.' : '';
+    $('pastBox').hidden = !state.history.length;
+    $('past').innerHTML = state.history.map(function (h, i) {
+      var g = grade(h.answers);
+      return '<li><span>' + esc(new Date(h.date).toLocaleDateString()) + (h.name ? ' · ' + esc(h.name) : '') + ' · Level ' + g.r.level +
+        ' · about ' + g.r.label + '</span><button class="btn small" data-h="' + i + '">See</button></li>';
+    }).join('');
+    show('start');
+  }
+  $('past').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-h]');
+    if (b) showResults(state.history[+b.dataset.h]);
+  });
+  $('go').onclick = function () {
+    var name = $('name').value.trim();
+    if (!state.run) state.run = { name: name, started: new Date().toISOString(), at: 0, answers: {} };
+    state.run.name = name;
+    save();
+    goTo(state.run.at);
+  };
+  $('restart').onclick = function () {
+    modal('Start over?', 'The answers so far will be cleared. Past results stay.', [
+      ['Cancel', null], ['Start over', function () { state.run = null; save(); renderStart(); }, 'primary']]);
+  };
+  $('home').onclick = function () { renderStart(); };
+  $('voice').onclick = function () { state.voice = !state.voice; save(); paintVoice(); if (!state.voice) stopVoice(); };
+
+  // ---------- board ----------
+  function placement(p) {
+    var b = {};
+    p.pos.split('/').forEach(function (row, i) {
+      var f = 0;
+      for (var k = 0; k < row.length; k++) {
+        var ch = row[k];
+        if (/\d/.test(ch)) { f += +ch; continue; }
+        b[FILES[f] + (8 - i)] = (ch === ch.toUpperCase() ? 'w' : 'b') + ch.toLowerCase();
+        f++;
+      }
+    });
+    return b;
+  }
+  function applyMove(b, u) {
+    var from = u.slice(0, 2), to = u.slice(2, 4), pc = b[from];
+    if (pc[1] === 'k' && Math.abs(from.charCodeAt(0) - to.charCodeAt(0)) === 2) {
+      var kingSide = to[0] === 'g', rf = (kingSide ? 'h' : 'a') + from[1], rt = (kingSide ? 'f' : 'd') + from[1];
+      b[rt] = b[rf]; delete b[rf];
+    }
+    if (pc[1] === 'p' && from[0] !== to[0] && !b[to]) delete b[to[0] + from[1]];
+    delete b[from];
+    b[to] = u[4] ? pc[0] + u[4] : pc;
+    return b;
+  }
+  function drawBoard(el, p, move, marks) {
+    var b = placement(p), h = '';
+    if (move) applyMove(b, move);
+    for (var r = 8; r >= 1; r--) {
+      for (var f = 0; f < 8; f++) {
+        var sq = FILES[f] + r, pc = b[sq];
+        h += '<div class="sq ' + ((f + r) % 2 ? 'd' : 'l') + (marks[sq] ? ' ' + marks[sq] : '') + '" data-sq="' + sq + '" role="gridcell" aria-label="' + sq +
+          (pc ? ', ' + (pc[0] === 'w' ? 'white ' : 'black ') + NAMES[pc[1]] : '') + '">' +
+          (f === 0 ? '<span class="coord r">' + r + '</span>' : '') + (r === 1 ? '<span class="coord f">' + FILES[f] + '</span>' : '') +
+          (pc ? '<span class="piece ' + pc[0] + '">' + GLYPH[pc[1]] + VS15 + '</span>' : '') + '</div>';
+      }
+    }
+    el.innerHTML = h;
+  }
+  function addMark(marks, sq, cls) { marks[sq] = marks[sq] ? marks[sq] + ' ' + cls : cls; }
+
+  // ---------- puzzles ----------
+  var sel = null, drag = null;
+  function cur() { return P[state.run.at]; }
+  function answerOf(p) { var a = state.run.answers[p.id]; return a === undefined ? null : a; }
+  function setAnswer(v) {
+    var p = cur();
+    if (v === null || v === undefined) delete state.run.answers[p.id]; else state.run.answers[p.id] = v;
+    save();
+  }
+  function goTo(i) {
+    state.run.at = i;
+    save();
+    sel = null;
+    show('play');
+    renderPlay();
+    if (state.voice) readQuestion();
+  }
+  function isMove(p) { return p.kind === 'move' || p.kind === 'mate'; }
+  function paintBoard() {
+    var p = cur(), a = isMove(p) ? answerOf(p) : null, marks = {};
+    if (a) { addMark(marks, a.slice(0, 2), 'mine'); addMark(marks, a.slice(2, 4), 'mine'); }
+    else if (p.last) { addMark(marks, p.last[0], 'last'); addMark(marks, p.last[1], 'last'); }
+    if (sel) addMark(marks, sel, 'sel');
+    drawBoard($('board'), p, a, marks);
+  }
+  function renderPlay() {
+    var p = cur(), sec = D.sections[p.s], a = answerOf(p), run = state.run;
+    $('tabs').innerHTML = D.sections.map(function (s, k) {
+      var n = inSection(k).filter(function (q) { return run.answers[q.id] !== undefined; }).length;
+      return '<button class="tab' + (k === p.s ? ' on' : '') + '" data-k="' + k + '" title="' + esc(s.title) + '"><span class="ic">' + s.icon + '</span>' + n + '/10</button>';
+    }).join('');
+    $('dots').innerHTML = inSection(p.s).map(function (q, j) {
+      return '<button class="dot' + (run.answers[q.id] !== undefined ? ' done' : '') + (q === p ? ' cur' : '') + '" data-i="' + P.indexOf(q) + '" aria-label="' + q.id + '">' + (j + 1) + '</button>';
+    }).join('');
+    $('pid').textContent = sec.icon + ' ' + p.id;
+    $('count').textContent = (state.run.at + 1) + ' of ' + P.length;
+    var hasBoard = !!p.pos;
+    $('boardwrap').hidden = !hasBoard;
+    $('think').hidden = hasBoard;
+    $('turn').hidden = !hasBoard;
+    $('moveHint').hidden = !(p.kind === 'move' || p.kind === 'mate') || !!a;
+    $('board').classList.toggle('play', p.kind === 'move' || p.kind === 'mate');
+    if (hasBoard) {
+      $('turn').className = 'turn ' + p.turn;
+      $('turn').innerHTML = '<i></i>' + (p.turn === 'w' ? 'White' : 'Black') + ' to move';
+      paintBoard();
+    } else $('think').innerHTML = D.art.think;
+    $('ask').textContent = p.ask;
+    $('status').textContent = '';
+    renderAnswer();
+    $('back').disabled = state.run.at === 0;
+    $('nextSection').hidden = p.s === D.sections.length - 1;
+  }
+  function renderAnswer() {
+    var p = cur(), a = answerOf(p), el = $('answer');
+    if (p.kind === 'choice') {
+      var short = p.options.every(function (o) { return o.length <= 12; });
+      el.innerHTML = '<div class="opts' + (short ? ' short' : '') + '">' + p.options.map(function (o, i) {
+        return '<button class="opt' + (a === LETTERS[i] ? ' on' : '') + '" data-opt="' + LETTERS[i] + '" aria-pressed="' + (a === LETTERS[i]) + '"><b>' +
+          LETTERS[i] + '</b><span>' + esc(o) + '</span></button>';
+      }).join('') + '</div>';
+    } else if (p.kind === 'count') {
+      el.innerHTML = '<div class="stepper"><button class="btn" data-step="-1" aria-label="One less">−</button>' +
+        '<input id="num" inputmode="numeric" maxlength="2" aria-label="Number of squares" value="' + (a === null ? '' : a) + '" placeholder="?">' +
+        '<button class="btn" data-step="1" aria-label="One more">+</button><span>squares</span></div>';
+    } else if (a) {
+      // No + or #: they would tell the child the move gives check or mate.
+      var san = p.legal.find(function (m) { return m[0] === a; })[1].replace(/[+#]/g, '');
+      el.innerHTML = '<div class="mymove"><span>Your move:</span><b>' + esc(san) + '</b><button class="btn small" id="undo">↺ Change it</button></div>';
+    } else el.innerHTML = '';
+    var next = $('next');
+    next.textContent = a === null ? 'Skip ▶' : 'Next ▶';
+    next.classList.toggle('primary', a !== null);
+  }
+  function answerChanged() {
+    renderAnswer();
+    var p = cur();
+    $('dots').querySelector('[data-i="' + state.run.at + '"]').classList.toggle('done', answerOf(p) !== null);
+    var tab = $('tabs').querySelector('.tab.on');
+    var n = inSection(p.s).filter(function (q) { return state.run.answers[q.id] !== undefined; }).length;
+    tab.lastChild.textContent = n + '/10';
+  }
+
+  $('answer').addEventListener('click', function (e) {
+    var o = e.target.closest('[data-opt]'), st = e.target.closest('[data-step]');
+    if (o) { setAnswer(o.dataset.opt); answerChanged(); }
+    if (st) {
+      var a = answerOf(cur()), v = a === null ? (+st.dataset.step > 0 ? 1 : 0) : Math.max(0, Math.min(64, a + +st.dataset.step));
+      setAnswer(v); answerChanged();
+    }
+    if (e.target.id === 'undo') { setAnswer(null); sel = null; paintBoard(); answerChanged(); $('moveHint').hidden = false; }
+  });
+  $('answer').addEventListener('input', function (e) {
+    if (e.target.id !== 'num') return;
+    var t = e.target.value.replace(/\D/g, '').slice(0, 2);
+    if (t !== e.target.value) e.target.value = t;
+    setAnswer(t === '' ? null : Math.min(64, +t));
+    var next = $('next'), a = answerOf(cur());
+    next.textContent = a === null ? 'Skip ▶' : 'Next ▶';
+    next.classList.toggle('primary', a !== null);
+    $('dots').querySelector('[data-i="' + state.run.at + '"]').classList.toggle('done', a !== null);
+  });
+
+  // Moves: tap a piece then a square, or drag. No dots: showing where a piece can go would give rules answers away.
+  function legalTo(from, to) { return cur().legal.find(function (m) { return m[0].slice(0, 4) === from + to; }); }
+  function tryMove(from, to) {
+    var m = legalTo(from, to);
+    sel = null;
+    if (m) {
+      setAnswer(m[0]);
+      paintBoard();
+      answerChanged();
+      $('moveHint').hidden = true;
+      $('status').textContent = '';
+      return;
+    }
+    paintBoard();
+    var el = $('board').querySelector('[data-sq="' + to + '"]');
+    if (el) el.classList.add('bad');
+    $('status').textContent = "That move isn't allowed. Try another one!";
+  }
+  function ownPiece(sq) { var p = cur(), pc = placement(p)[sq]; return pc && pc[0] === p.turn; }
+  var ghost = null;
+  function endDrag() { if (ghost) { ghost.remove(); ghost = null; } drag = null; }
+  $('board').addEventListener('pointerdown', function (e) {
+    var p = cur(), el = e.target.closest('.sq');
+    if (!el || !(p.kind === 'move' || p.kind === 'mate')) return;
+    if (answerOf(p)) { $('status').textContent = 'Tap "Change it" to pick a different move.'; return; }
+    var sq = el.dataset.sq;
+    $('status').textContent = '';
+    if (sel && sq !== sel && legalTo(sel, sq)) { tryMove(sel, sq); return; }
+    if (ownPiece(sq)) {
+      sel = sq;
+      paintBoard();
+      drag = { from: sq, x: e.clientX, y: e.clientY };
+      try { $('board').setPointerCapture(e.pointerId); } catch (err) { /* synthetic events */ }
+      return;
+    }
+    if (sel) { tryMove(sel, sq); return; }
+    $('status').textContent = 'Tap one of ' + (p.turn === 'w' ? "White's" : "Black's") + ' pieces first.';
+  });
+  $('board').addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    if (!ghost && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 8) return;
+    if (!ghost) {
+      var pc = placement(cur())[drag.from];
+      ghost = document.createElement('div');
+      ghost.className = 'ghost';
+      ghost.innerHTML = '<span class="piece ' + pc[0] + '">' + GLYPH[pc[1]] + VS15 + '</span>';
+      document.body.appendChild(ghost);
+    }
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top = e.clientY + 'px';
+  });
+  $('board').addEventListener('pointerup', function (e) {
+    if (!drag) return;
+    var dragged = !!ghost, from = drag.from;
+    endDrag();
+    if (!dragged) return;
+    var under = document.elementFromPoint(e.clientX, e.clientY), el = under && under.closest('#board .sq');
+    if (el && el.dataset.sq !== from) tryMove(from, el.dataset.sq);
+  });
+  $('board').addEventListener('pointercancel', endDrag);
+
+  // ---------- moving around ----------
+  $('readq').onclick = readQuestion;
+  $('back').onclick = function () { if (state.run.at > 0) goTo(state.run.at - 1); };
+  $('next').onclick = function () {
+    var i = state.run.at;
+    if (i === P.length - 1 || P[i + 1].s !== P[i].s) showBetween(P[i].s); else goTo(i + 1);
+  };
+  $('nextSection').onclick = function () { goTo(firstOf(cur().s + 1)); };
+  $('tabs').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-k]');
+    if (!t) return;
+    var k = +t.dataset.k, open = inSection(k).find(function (q) { return state.run.answers[q.id] === undefined; });
+    goTo(open ? P.indexOf(open) : firstOf(k));
+  });
+  $('dots').addEventListener('click', function (e) { var d = e.target.closest('[data-i]'); if (d) goTo(+d.dataset.i); });
+  $('finish').onclick = askFinish;
+
+  function showBetween(k) {
+    var sec = D.sections[k], last = k === D.sections.length - 1;
+    var n = inSection(k).filter(function (q) { return state.run.answers[q.id] !== undefined; }).length;
+    var open = P.filter(function (q) { return state.run.answers[q.id] === undefined; });
+    if (!last) { state.run.at = firstOf(k + 1); save(); }
+    $('artCheer1').innerHTML = D.art.cheer;
+    $('btTitle').textContent = last ? 'That was the last puzzle!' : 'Section ' + sec.id + ' done!';
+    $('btText').textContent = 'You answered ' + n + ' of 10 ' + sec.title + ' puzzles.' +
+      (last ? (open.length ? ' You skipped ' + open.length + '. You can go back to them, or finish now.' : ' You answered every puzzle. Wow!') :
+        ' Next up: ' + D.sections[k + 1].icon + ' ' + D.sections[k + 1].title + '.');
+    var b = $('btButtons');
+    b.innerHTML = '';
+    function add(label, fn, cls) { var el = document.createElement('button'); el.className = 'btn' + (cls ? ' ' + cls : ''); el.textContent = label; el.onclick = fn; b.appendChild(el); }
+    if (last) {
+      add('Finish ✓', askFinish, 'primary');
+      if (open.length) add('Go to a skipped puzzle', function () { goTo(P.indexOf(open[0])); });
+    } else {
+      add('Keep going ▶', function () { goTo(state.run.at); }, 'primary');
+      add('Take a break', renderStart);
+    }
+    show('between');
+    if (state.voice) speak($('btTitle').textContent + ' ' + $('btText').textContent);
+  }
+  function askFinish() {
+    var n = answered(state.run);
+    modal('Finish the Check-Up?', 'You answered ' + n + ' of ' + P.length + ' puzzles. Skipped puzzles count as not solved, and answers can\'t be changed after this.',
+      [['Keep going', null], ['Finish ✓', finish, 'primary']]);
+  }
+  function finish() {
+    var run = state.run, res = { date: new Date().toISOString(), name: run.name, answers: run.answers };
+    state.history.unshift(res);
+    state.history = state.history.slice(0, 20);
+    state.lastName = run.name;
+    state.run = null;
+    save();
+    showResults(res);
+  }
+
+  // ---------- grading ----------
+  function correct(p, a) {
+    if (a === null || a === undefined) return false;
+    if (p.kind === 'choice' || p.kind === 'count') return a === p.key;
+    return p.key.indexOf(a) >= 0;
+  }
+  function grade(answers) {
+    var counts = {}, solved = {}, bySec = D.sections.map(function () { return 0; }), items = [];
+    P.forEach(function (p) {
+      var a = answers[p.id] === undefined ? null : answers[p.id], ok = correct(p, a);
+      counts[p.level] = (counts[p.level] || 0) + 1;
+      if (ok) { solved[p.level] = (solved[p.level] || 0) + 1; bySec[p.s]++; }
+      items.push({ p: p, a: a, ok: ok });
+    });
+    return { r: S.rate(D.levels, counts, solved), bySec: bySec, items: items,
+      total: items.filter(function (x) { return x.ok; }).length, answered: items.filter(function (x) { return x.a !== null; }).length };
+  }
+  function said(p, a) {
+    if (a === null) return 'skipped';
+    if (p.kind === 'choice') return a + ' · ' + p.options[LETTERS.indexOf(a)];
+    if (p.kind === 'count') return String(a);
+    return p.legal.find(function (m) { return m[0] === a; })[1];
+  }
+  function right(p) {
+    if (p.kind === 'choice') return p.key + ' · ' + p.options[LETTERS.indexOf(p.key)];
+    if (p.kind === 'count') return String(p.key);
+    return p.keySan.join(' or ');
+  }
+  function showResults(res) {
+    var g = grade(res.answers), r = g.r, L = D.levels[r.level - 1];
+    $('artCheer2').innerHTML = D.art.cheer;
+    $('rsTitle').textContent = 'Great job' + (res.name ? ', ' + res.name : '') + '!';
+    $('rsSolved').textContent = 'You solved ' + g.total + ' of ' + P.length + ' puzzles.';
+    $('rsDate').textContent = 'Check-Up finished on ' + new Date(res.date).toLocaleDateString() + ' · ' + g.answered + ' answered, ' + (P.length - g.answered) + ' skipped';
+    $('rsLevel').textContent = r.level;
+    $('rsBand').textContent = r.top ? '1700–1800+' : L.from + '–' + L.to;
+    $('rsRating').textContent = r.top ? '1800+' : 'about ' + r.label;
+    $('rsCan').textContent = 'Level ' + r.level + ': ' + L.can;
+    $('rsSecs').innerHTML = D.sections.map(function (s, k) {
+      var n = g.bySec[k], st = n >= 8 ? 3 : n >= 5 ? 2 : n >= 2 ? 1 : 0;
+      return '<div class="secrow"><span class="ic">' + s.icon + '</span><span class="t">' + esc(s.title) + '</span><span class="stars" aria-label="' + st + ' of 3 stars">' +
+        '★★★'.slice(0, st) + '☆☆☆'.slice(0, 3 - st) + '</span><span class="n">' + n + '/10</span></div>';
+    }).join('');
+    $('rsText').textContent = r.text + ' Skipped puzzles count as not solved.';
+    $('rsLevels').innerHTML = '<tr><th>Level</th><th>Rating</th><th class="c">Solved</th><th class="c">Pass mark</th><th class="c">Passed?</th></tr>' +
+      r.rows.map(function (row) {
+        return '<tr' + (row.stop ? ' class="stop"' : '') + '><td>Level ' + row.n + (row.stop ? ' ← here' : '') + '</td><td>' + (row.n === 9 ? '1700+' : row.from + '–' + row.to) +
+          '</td><td class="c">' + row.solved + ' of ' + row.count + '</td><td class="c">' + row.pass + '</td><td class="c">' +
+          (row.passed ? '✓' : row.gap ? '✗ gap' : '✗') + '</td></tr>';
+      }).join('');
+    var advice = D.practiceByLevel.find(function (a) { return r.level >= a.from && r.level <= a.to; });
+    var order = D.sections.map(function (s, k) { return k; }).sort(function (a, b) { return g.bySec[a] - g.bySec[b]; });
+    var weak = order.filter(function (k) { return g.bySec[k] <= 4; }).slice(0, 2);
+    if (!weak.length && g.bySec[order[0]] <= 7) weak = [order[0]];
+    var strong = D.sections.filter(function (s, k) { return g.bySec[k] >= 8; }).map(function (s) { return s.title; });
+    $('rsNext').innerHTML = '<p><b>For Level ' + r.level + ':</b> ' + esc(advice.text) + '</p>' +
+      weak.map(function (k) { var s = D.sections[k]; return '<p><b>' + s.icon + ' ' + esc(s.title) + '</b> (' + g.bySec[k] + '/10): ' + esc(s.practice) + '</p>'; }).join('') +
+      (strong.length ? '<p><b>Strengths:</b> ' + esc(strong.join(', ')) + '.</p>' : '');
+    $('rsReview').innerHTML = D.sections.map(function (s, k) {
+      return '<h3>' + s.icon + ' ' + esc(s.title) + ' · ' + g.bySec[k] + '/10</h3>' + g.items.filter(function (x) { return x.p.s === k; }).map(function (x) {
+        var i = P.indexOf(x.p), mk = x.ok ? ['ok', '✓'] : x.a === null ? ['skip', '–'] : ['no', '✗'];
+        return '<details class="rv" data-i="' + i + '"><summary><span class="mark ' + mk[0] + '">' + mk[1] + '</span><b>' + x.p.id + '</b><span class="lv">Level ' + x.p.level +
+          '</span><span class="ya">Answer: ' + esc(said(x.p, x.a)) + (x.ok ? '' : ' · right: <b>' + esc(right(x.p)) + '</b>') + '</span></summary>' +
+          '<div class="rvbody">' + (x.p.pos ? '<div class="boardwrap"><div class="board"></div></div>' : '') +
+          '<p>' + esc(x.p.ask) + '<br><b>' + esc(x.p.idea) + '.</b> ' + esc(x.p.explain) + '</p></div></details>';
+      }).join('');
+    }).join('');
+    $('rsReview').dataset.answers = JSON.stringify(res.answers);
+    $('rsGrown').open = false;
+    show('results');
+    if (state.voice) speak($('rsTitle').textContent + ' ' + $('rsSolved').textContent + ' You reached Level ' + r.level + '!');
+  }
+  // Review boards are drawn when opened: the child's move in blue, the right move outlined in green.
+  $('rsReview').addEventListener('toggle', function (e) {
+    var d = e.target;
+    if (!d.open || !d.classList.contains('rv') || d.dataset.drawn) return;
+    var p = P[+d.dataset.i], el = d.querySelector('.board');
+    if (!el) return;
+    var a = JSON.parse($('rsReview').dataset.answers)[p.id], marks = {};
+    if (p.last) { addMark(marks, p.last[0], 'last'); addMark(marks, p.last[1], 'last'); }
+    if ((p.kind === 'move' || p.kind === 'mate')) {
+      if (a) { addMark(marks, a.slice(0, 2), 'mine'); addMark(marks, a.slice(2, 4), 'mine'); }
+      p.key.forEach(function (k) { addMark(marks, k.slice(0, 2), 'key'); addMark(marks, k.slice(2, 4), 'key'); });
+    }
+    drawBoard(el, p, null, marks);
+    d.dataset.drawn = '1';
+  }, true);
+  $('rsHome').onclick = renderStart;
+  $('rsPrint').onclick = function () { window.print(); };
+  window.addEventListener('beforeprint', function () { $('rsGrown').open = true; });
+
+  // ---------- go ----------
+  $('artWave').innerHTML = D.art.wave;
+  paintVoice();
+  renderStart();
+})();
+</script>
+</body>
+</html>
