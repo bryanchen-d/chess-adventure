@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="2026.11.15-0743">
+<meta name="app-version" content="2026.11.15-0825">
 <title>Chess Adventure: chess puzzles for little learners</title>
 <style>
 :root {
@@ -159,6 +159,16 @@ h2.page { text-align: center; }
 
 .sq .dot.special { width: 40%; height: 40%; background: rgba(255, 170, 0, .9); box-shadow: 0 0 0 4px rgba(255,255,255,.75); animation: pulse 1.2s infinite; }
 
+.promo-pick { position: absolute; inset: 0; z-index: 45; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .28); border-radius: 14px; }
+.promo-pick .box { display: flex; gap: 8px; background: #fff; border-radius: 24px; padding: 12px; box-shadow: 0 8px 0 rgba(0,0,0,.18); animation: pop .3s; }
+.promo-pick button { font: inherit; border: 0; border-radius: 18px; background: var(--light); color: var(--ink); cursor: pointer; padding: 8px 10px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: calc(var(--bs) * 0.2); }
+.promo-pick button:active { transform: translateY(2px); }
+.promo-pick button .piece { font-size: calc(var(--bs) * 0.16); }
+.promo-pick button span { font-size: clamp(14px, 3vw, 19px); }
+.promo-pick button.hint { outline: 5px solid #ffd400; animation: pulse 1s infinite; }
+
 /* Moving pieces, Ollie */
 .ollie { display: block; overflow: visible; }
 .board { touch-action: none; }
@@ -194,7 +204,7 @@ h2.page { text-align: center; }
 </header>
 <main id="app"></main>
 <script id="engine">
-// Tiny chess engine for teaching. Pawns always promote to a queen.
+// Tiny chess engine for teaching. A pawn reaching the far side becomes m.promo (Q, R, B or N; a Queen if not given).
 // Castling and en passant only happen when the caller passes castling rights or an en passant square (Season 2).
 var Chess = (function () {
   var FILES = 'abcdefgh';
@@ -298,12 +308,24 @@ var Chess = (function () {
     var nb = b.slice(), p = nb[m.from];
     nb[m.from] = null;
     var last = p[0] === 'w' ? 7 : 0;
-    nb[m.to] = (p[1] === 'P' && (m.to >> 3) === last) ? p[0] + 'Q' : p;
+    nb[m.to] = (p[1] === 'P' && (m.to >> 3) === last) ? p[0] + (m.promo || 'Q') : p;
     if (m.castle) { nb[m.rookTo] = nb[m.rookFrom]; nb[m.rookFrom] = null; }
     if (m.ep != null) nb[m.ep] = null;
     return nb;
   }
   function isLegal(b, m) { return !inCheck(makeMove(b, m), b[m.from][0]); }
+  // Promotion: a pawn reaching the far side may become any of these.
+  var PROMOS = ['Q', 'R', 'B', 'N'];
+  function isPromotion(b, m) { var p = b[m.from]; return !!p && p[1] === 'P' && (m.to >> 3) === (p[0] === 'w' ? 7 : 0); }
+  // Each promotion move once per piece it can become.
+  function withPromos(b, ms) {
+    var out = [];
+    ms.forEach(function (m) {
+      if (!isPromotion(b, m)) { out.push(m); return; }
+      PROMOS.forEach(function (x) { out.push(Object.assign({}, m, { promo: x })); });
+    });
+    return out;
+  }
 
   // Castling: the King steps two squares toward a Rook and the Rook hops over him.
   // rights = { k: kingside allowed, q: queenside allowed }; both pieces must still be on their start squares.
@@ -393,7 +415,7 @@ var Chess = (function () {
         for (var j = 0; j < ms.length; j++) {
           var m = ms[j], nb = makeMove(s.b, m), pd = s.pd;
           var st = s.st.filter(function (x) { return x !== m.to; });
-          if (!pd && promo.length && p[1] === 'P' && nb[m.to][1] === 'Q') {
+          if (!pd && promo.length && isPromotion(s.b, m)) {
             pd = true;
             st = st.concat(promo.filter(function (x) { return x !== m.to; })).sort(function (x, y) { return x - y; });
           }
@@ -456,6 +478,13 @@ var Chess = (function () {
     var r = moveRights(rights, b, m);
     return r.k === rights.k && r.q === rights.q;
   }
+  // "Pick Your Piece!" goals for the piece a pawn becomes: any, check, nostalemate, fork (with targets).
+  function promoGoalMet(goal, nb, m, targets) {
+    if (goal === 'check') return inCheck(nb, 'b');
+    if (goal === 'nostalemate') return status(nb, 'b') !== 'stalemate';
+    if (goal === 'fork') return isFork(nb, m, targets || []);
+    return true;
+  }
   // A first move after which white can checkmate next move, whatever black replies.
   function isMate2Key(b, m) {
     var nb = makeMove(b, m), st = status(nb, 'b');
@@ -470,7 +499,8 @@ var Chess = (function () {
     isLegal: isLegal, legalMoves: legalMoves, status: status, solve: solve, VALUE: VALUE,
     castleMoves: castleMoves, castleBlock: castleBlock, moveRights: moveRights, search: search,
     targetsOf: targetsOf, bestCapture: bestCapture, isFork: isFork, mateMoves: mateMoves, isMate2Key: isMate2Key,
-    safeLanding: safeLanding, startRights: startRights, keepsCastle: keepsCastle, epSquare: epSquare, epMoves: epMoves
+    safeLanding: safeLanding, startRights: startRights, keepsCastle: keepsCastle, epSquare: epSquare, epMoves: epMoves,
+    PROMOS: PROMOS, isPromotion: isPromotion, withPromos: withPromos, promoGoalMet: promoGoalMet
   };
 })();
 </script>
@@ -538,12 +568,12 @@ var CHAPTERS = [
       { type: 'stars', text: 'Hop, hop, hop! Collect all the stars.', pieces: { a1: 'wN' }, stars: ['b3', 'd4', 'b5'] }
     ] },
   { id: 'pawn', piece: 'P', icon: '🐣', title: 'Pawn the Little Soldier', sticker: '🐥',
-    story: 'This is the Pawn, a brave little soldier. Pawns march straight FORWARD, one step at a time. On its very first move, a Pawn may take TWO steps. Pawns never walk backwards. And if a Pawn reaches the other side... something magic happens!',
+    story: 'This is the Pawn, a brave little soldier. Pawns march straight FORWARD, one step at a time. On its very first move, a Pawn may take TWO steps. Pawns never walk backwards. And if a Pawn reaches the other side... something magic happens: it turns into a Queen, a Rook, a Bishop or a Knight. You choose!',
     puzzles: [
       { type: 'explore', text: 'Tap the Pawn and march forward 3 times!', pieces: { e2: 'wP' }, moves: 3 },
       { type: 'stars', text: 'Big first step! A Pawn can jump two squares on its first move.', pieces: { d2: 'wP' }, stars: ['d4'] },
       { type: 'stars', text: 'Two Pawns, two stars!', pieces: { c2: 'wP', f2: 'wP' }, stars: ['c4', 'f3'] },
-      { type: 'stars', text: 'March the Pawn to the other side... and see what happens! ✨', pieces: { e6: 'wP' }, stars: ['e8'], promoStars: ['a4'] }
+      { type: 'stars', text: 'March the Pawn to the other side, then pick what it becomes! ✨', pieces: { e6: 'wP' }, stars: ['e8'], promoStars: ['a4'] }
     ] },
   { id: 'eat', icon: '😋', title: 'Yum! Eating Pieces', sticker: '🦖',
     story: 'Pieces can EAT pieces from the other team! Just move onto a black piece and CHOMP, it\'s gone. Each piece eats the same way it moves. But Pawns are special: they walk straight, but eat one step DIAGONALLY forward.',
@@ -633,13 +663,21 @@ var CHAPTERS = [
       { type: 'fork', text: 'The Queen can attack the Rook and the Knight from one square. Find it!', pieces: { d1: 'wQ', a7: 'bR', d8: 'bN' }, targets: ['a7', 'd8'] },
       { type: 'fork', text: 'Even a little Pawn can fork! March it to attack two pieces.', pieces: { d2: 'wP', c5: 'bN', e5: 'bR' }, targets: ['c5', 'e5'] }
     ] },
-  { id: 'promote', season: 2, icon: '👸', title: 'Make a Queen!', sticker: '🧚',
-    story: 'Remember the Pawn\'s magic? When a Pawn reaches the other side, it becomes a Queen! But black pieces try to stop it. Find a safe road, and never step on a square a black piece is guarding.',
+  { id: 'promote', season: 2, icon: '👸', title: 'To the Other Side!', sticker: '🧚',
+    story: 'Remember the Pawn\'s magic? When a Pawn reaches the other side, it becomes a brand new piece! But black pieces try to stop it. Find a safe road, and never step on a square a black piece is guarding.',
     puzzles: [
-      { type: 'promote', text: 'Two Pawns want to be a Queen. The black Knight guards a square. Which Pawn can get through?', pieces: { b5: 'wP', g5: 'wP', e5: 'bN' } },
+      { type: 'promote', text: 'Two Pawns want to reach the other side. The black Knight guards a square. Which Pawn can get through?', pieces: { b5: 'wP', g5: 'wP', e5: 'bN' } },
       { type: 'promote', text: 'A black Pawn blocks the road. Pawns can\'t eat straight ahead, but they CAN eat diagonally!', pieces: { d6: 'wP', d7: 'bP', c7: 'bN' } },
       { type: 'promote', text: 'Three Pawns race! Which one can sneak past the black Knight?', pieces: { a5: 'wP', e5: 'wP', h5: 'wP', c8: 'bN' } },
       { type: 'promote', text: 'The black Rook guards the end of the road. Ask your Bishop for help first!', pieces: { g6: 'wP', a6: 'wB', c8: 'bR' } }
+    ] },
+  { id: 'underpromote', season: 2, icon: '🎁', title: 'Pick Your Piece!', sticker: '🦋',
+    story: 'When a Pawn reaches the other side, YOU choose what it becomes: a Queen, a Rook, a Bishop or a Knight. The Queen is usually the best... but not always! A Knight can jump into places a Queen can\'t reach, and sometimes a Queen would make a tie. Think about what you need!',
+    puzzles: [
+      { type: 'underpromote', goal: 'any', text: 'Free choice! Move your Pawn to the end and pick ANY piece you like.', pieces: { d7: 'wP' } },
+      { type: 'underpromote', goal: 'check', text: 'Make a new piece that says CHECK right away. A Queen can\'t do it here!', pieces: { b7: 'wP', h1: 'wK', c6: 'bK' } },
+      { type: 'underpromote', goal: 'nostalemate', text: 'Careful! A new Queen here would trap the black King without check: a tie! Pick a piece that lets him move, so the game goes on.', pieces: { g7: 'wP', c1: 'wK', a1: 'bK' } },
+      { type: 'underpromote', goal: 'fork', text: 'Make a piece that checks the King AND attacks the Queen at the same time!', pieces: { e7: 'wP', a1: 'wK', f6: 'bK', c7: 'bQ' }, targets: ['f6', 'c7'] }
     ] },
   { id: 'castle', season: 2, icon: '🏯', title: 'The Castle Move', sticker: '🏰',
     story: 'The King has a secret move called CASTLING! The King steps TWO squares toward a Rook, and the Rook hops over to his other side. Now the King is safe in his castle! You can only castle if the King and that Rook have never moved, nothing is in between, and the King is not in check.',
@@ -712,7 +750,7 @@ var CHAPTERS = [
   var PRAISE = ['Hooray!', 'You did it!', 'Super!', 'Amazing!', 'Great job!', 'Fantastic!', 'Wow, well done!'];
   var CHEERS = ['🎉', '🌟', '🥳', '👏', '🏅', '🎈'];
   var CONFETTI = ['⭐', '🎉', '🎈', '✨', '💛', '💚', '💙', '🧡', '💜'];
-  var ONE_MOVE = { safe: 1, check: 1, escape: 1, mate: 1, bigeat: 1, freeeat: 1, fork: 1, stalemate: 1, mate2: 1, enpassant: 1 };
+  var ONE_MOVE = { safe: 1, check: 1, escape: 1, mate: 1, bigeat: 1, freeeat: 1, fork: 1, stalemate: 1, mate2: 1, enpassant: 1, underpromote: 1 };
   var GUIDE = {
     board: ['The board has 64 light and dark squares. The light square goes in the right-hand corner. Meet the six pieces.', 'Set up a real board together and check: "light on the right!"'],
     rook: ['The Rook moves in straight lines, as far as it likes, and can\'t jump.', 'Rook race: put a Rook in each corner and race to the far side.'],
@@ -720,7 +758,8 @@ var CHAPTERS = [
     queen: ['The Queen moves like a Rook and a Bishop together.', 'Count the squares a Queen reaches from the middle (27!).'],
     king: ['The King walks one step in any direction.', 'King walk: take the King across the board, one step at a time.'],
     knight: ['The Knight moves in an L and is the only piece that jumps.', 'Say "one, two, turn!" out loud with each jump.'],
-    pawn: ['Pawns move forward one square, or two on their first move. At the far side they become a Queen.', 'March a pawn across the board and swap it for a Queen.'],
+    pawn: ['Pawns move forward one square, or two on their first move. At the far side they become a Queen, Rook, Bishop or Knight; your child picks.', 'March a pawn across the board and let your child choose the new piece.'],
+    underpromote: ['Underpromotion: the Queen is usually best, but a Knight can check or fork where a Queen can\'t, and a Rook can avoid stalemate.', 'Each time a pawn promotes, ask: "Which new piece helps most here?"'],
     eat: ['Pieces capture the way they move. Pawns capture one square diagonally forward.', 'Set out 3 or 4 pieces and ask "who can eat who?"'],
     safe: ['Before moving, check if an enemy piece can capture there.', 'Before each move, ask: "Is it safe there?"'],
     check: ['Check means the King is attacked.', 'Say "Check!" together every time.'],
@@ -1011,7 +1050,7 @@ var CHAPTERS = [
   function promoteSearch(b) {
     return C.search(b, {
       allow: function (bb, m, nb) { return C.safeLanding(bb, m, nb); },
-      goal: function (nb, m, bb) { return bb[m.from][1] === 'P' && nb[m.to][1] === 'Q' && C.safeLanding(bb, m, nb); }
+      goal: function (nb, m, bb) { return C.isPromotion(bb, m) && C.safeLanding(bb, m, nb); }
     });
   }
   function castleSearch(b, rights) {
@@ -1202,7 +1241,7 @@ var CHAPTERS = [
       var el = document.elementFromPoint(e.clientX, e.clientY), sq = el && el.closest ? el.closest('.sq') : null;
       var to = sq ? +sq.dataset.i : -1;
       var m = to >= 0 && to !== d.i && movesFrom(d.i).find(function (x) { return x.to === to; });
-      if (m && !P.busy) doMove(m, true); else drawBoard();
+      if (m && !P.busy) playMove(m, true); else drawBoard();
     };
   }
 
@@ -1214,7 +1253,7 @@ var CHAPTERS = [
     if (t === 'pawnwars' && P.turn !== 'w') return;
     if (P.sel != null && P.sel !== i) {
       var m = movesFrom(P.sel).find(function (x) { return x.to === i; });
-      if (m) return doMove(m);
+      if (m) return playMove(m);
     }
     if (p && p[0] === 'w') {
       if (P.fixed.indexOf(i) >= 0) { sfx('oops'); say('Shh! That Pawn is sleeping. 💤 It can\'t move. Try another piece.'); return; }
@@ -1326,6 +1365,36 @@ var CHAPTERS = [
     anim.onfinish = function () { g.remove(); if (P === me && !me.dead) cb(); };
   }
 
+  // A pawn reaching the far side asks which piece to become (not in the Pawn games, where reaching the end wins).
+  function playMove(m, instant) {
+    if (!C.isPromotion(P.board, m) || P.type === 'pawnwars') return doMove(m, instant);
+    pickPromotion(function (x) { doMove(Object.assign({}, m, { promo: x }), instant); });
+  }
+  function pickPromotion(done) {
+    var wrap = document.querySelector('.boardwrap'), me = P, keep = P.msg;
+    var want = P.hintMove && P.hintMove.promo;
+    var box = document.createElement('div');
+    box.className = 'promo-pick';
+    box.innerHTML = '<div class="box" role="dialog" aria-label="Pick a new piece">' + C.PROMOS.map(function (x) {
+      return '<button data-p="' + x + '"' + (x === want ? ' class="hint"' : '') + '>' + pieceHTML('w' + x) + '<span>' + PNAME[x] + '</span></button>';
+    }).join('') + '</div>';
+    wrap.appendChild(box);
+    P.busy = true;
+    say('Your Pawn reached the end! What should it become: a Queen, a Rook, a Bishop or a Knight?');
+    // Only react to touches that start on the picker: on phones, the click that ends the tap
+    // which opened it lands here too and must not count as "tapped outside".
+    var armed = false;
+    box.addEventListener('pointerdown', function () { armed = true; });
+    box.addEventListener('click', function (e) {
+      if (P !== me || !armed) return;
+      var btn = e.target.closest('button');
+      box.remove();
+      P.busy = false;
+      if (btn) { sfx('star'); done(btn.dataset.p); return; }
+      P.sel = null; drawBoard(); say(keep, true); // tapped outside: cancel
+    });
+  }
+
   function doMove(m, instant) {
     var before = P.board, p = before[m.from];
     P.history.push(snapshot());
@@ -1335,7 +1404,7 @@ var CHAPTERS = [
       if (m.castle) animate(m.rookFrom, m.rookTo, before[m.rookFrom], function () {}, 520);
       animate(m.from, m.to, p, cb, m.castle ? 520 : 0);
     })(function () {
-      var nb = C.makeMove(before, m), promoted = p[1] === 'P' && nb[m.to][1] === 'Q';
+      var nb = C.makeMove(before, m), promoted = C.isPromotion(before, m);
       P.board = nb; P.last = m; P.moves++; P.popAt = m.to; P.busy = false;
       P.quiet = (p[1] === 'P' || m.capture) ? 0 : P.quiet + 1;
       P.ep = P.useEp ? C.epSquare(before, m) : -1;
@@ -1358,14 +1427,14 @@ var CHAPTERS = [
     var b = P.board, t = P.type;
     if (t === 'explore') {
       if (P.moves >= P.pz.moves) return win();
-      if (promoted) say('Magic! The Pawn became a Queen! ✨ ' + (P.pz.moves - P.moves) + ' more!');
+      if (promoted) say('Magic! The Pawn became a ' + PNAME[nb[m.to][1]] + '! ✨ ' + (P.pz.moves - P.moves) + ' more!');
       else say(P.moves + '! ' + (P.pz.moves - P.moves === 1 ? 'One more move!' : 'Move again!'));
       return;
     }
     if (t === 'stars') {
-      if (promoted) { floater(m.to, '✨ Queen! ✨', '#8a2be2'); }
+      if (promoted) { floater(m.to, '✨ ' + PNAME[b[m.to][1]] + '! ✨', '#8a2be2'); }
       if (!P.stars.length) return win();
-      if (promoted) say('Magic! The Pawn turned into a Queen! ✨ A new star appeared. Can the Queen get it?');
+      if (promoted) say('Magic! The Pawn turned into a ' + PNAME[b[m.to][1]] + '! ✨ A new star appeared. Can the ' + PNAME[b[m.to][1]] + ' get it?');
       else if (gotStar) say('Got one! ' + (P.stars.length === 1 ? 'One more star!' : P.stars.length + ' more stars!'));
       else say(pick(['Keep going!', 'Where next?', 'Choo-choo! Keep going!'].slice(0, P.ch.id === 'rook' ? 3 : 2)), true);
       return;
@@ -1424,9 +1493,9 @@ var CHAPTERS = [
         return punish(m.to, function (who) { return 'Oh no! The black ' + who + ' was guarding that square. Find a safe road!'; });
       }
       if (promoted) {
-        floater(m.to, '👑 Queen!', '#8a2be2');
-        say('Magic! Your Pawn became a Queen! 👑', true);
-        return win('A new Queen! 👑');
+        floater(m.to, '✨ ' + PNAME[b[m.to][1]] + '!', '#8a2be2');
+        say('Magic! Your Pawn became a ' + PNAME[b[m.to][1]] + '! ✨', true);
+        return win('A new ' + PNAME[b[m.to][1]] + '! ✨');
       }
       say(pick(['Safe! Keep going.', 'Good! Keep marching.', 'Nice and safe!']));
       return;
@@ -1462,6 +1531,33 @@ var CHAPTERS = [
       return revertLater(2600);
     }
     if (t === 'mate2') return mate2After(m, before, b);
+    if (t === 'underpromote') {
+      var made = promoted ? PNAME[b[m.to][1]] : '';
+      if (!promoted) { P.fails++; sfx('oops'); say('Move the Pawn to the other side, then pick its new piece!'); return revertLater(2200); }
+      if (C.promoGoalMet(P.pz.goal, b, m, (P.pz.targets || []).map(C.idx))) {
+        var yay = {
+          any: 'A brand new ' + made + '! Great choice!',
+          check: 'CHECK! Your new ' + made + ' attacks the King!',
+          nostalemate: 'No tie! The black King can still move, so the game goes on. Smart choice!',
+          fork: 'FORK! Your new ' + made + ' checks the King AND attacks the Queen!'
+        }[P.pz.goal];
+        if (P.pz.goal === 'check' || P.pz.goal === 'fork') {
+          P.danger = P.pz.goal === 'fork' ? P.pz.targets.map(C.idx) : [C.kingSq(b, 'b')];
+          drawBoard(); sfx('check');
+        }
+        floater(m.to, '✨ ' + made + '! ✨', '#8a2be2');
+        say(yay, true);
+        return win('A new ' + made + '! ✨');
+      }
+      P.fails++; sfx('oops');
+      if (P.pz.goal === 'nostalemate') {
+        P.blue = [C.kingSq(b, 'b')]; drawBoard();
+        say('Oh no, a tie! With a new ' + made + ' the black King can\'t move, but he isn\'t in check. Pick a different piece!');
+      }
+      else if (P.pz.goal === 'check') say('A new ' + made + ' there doesn\'t say check. Which piece could reach the King?');
+      else say('A new ' + made + ' there doesn\'t attack both. Which piece could?');
+      return revertLater(2800);
+    }
     if (t === 'enpassant') {
       if (m.ep != null) {
         var chk = C.inCheck(b, 'b');
@@ -1695,6 +1791,10 @@ var CHAPTERS = [
       }
       case 'pawnwars': return pwBest(b, 'w', true, 0, P.ep);
       case 'enpassant': return ms.find(function (m) { return m.ep != null; }) || ms[0];
+      case 'underpromote': {
+        var tg = (P.pz.targets || []).map(C.idx);
+        return C.withPromos(b, ms).find(function (m) { return m.promo && C.promoGoalMet(P.pz.goal, C.makeMove(b, m), m, tg); }) || ms[0];
+      }
       case 'bigeat': return ms.filter(function (m) { return m.capture && C.VALUE[m.capture[1]] === P.best; })[0] || ms[0];
       case 'freeeat': return ms.find(function (m) { return m.capture && C.safeLanding(b, m, C.makeMove(b, m)); }) || ms[0];
       case 'fork': return ms.find(function (m) { return C.isFork(C.makeMove(b, m), m, P.pz.targets.map(C.idx)); }) || ms[0];
@@ -1733,7 +1833,8 @@ var CHAPTERS = [
       castle: who === 'King' ? 'Tap the glowing King, then the square two steps toward the Rook!' : 'Move the glowing ' + who + ' out of the King\'s way.',
       stalemate: 'The glowing ' + who + ' can make the tie.',
       mate2: P.phase ? 'The glowing ' + who + ' can checkmate now!' : 'Start with the glowing ' + who + '!',
-      enpassant: 'The glowing ' + who + ' is right beside the jumper. Tap it, then the gold dot!'
+      enpassant: 'The glowing ' + who + ' is right beside the jumper. Tap it, then the gold dot!',
+      underpromote: 'Move the glowing ' + who + ' to the end. Ollie will show you which new piece to pick!'
     };
     say(tips[P.type] || 'Tap the glowing ' + who + ', then a blue dot!');
   }
@@ -1837,7 +1938,7 @@ var CHAPTERS = [
       '<p>Chess Adventure teaches the rules of chess in tiny steps, one new idea at a time. Each adventure starts with a short story, then 1 to 6 small puzzles. ' +
       'Ollie the Owl reads everything aloud, so your child doesn\'t need to read.</p>' +
       '<p>Season 1 teaches how every piece moves, capturing, check and checkmate. Season 2 opens after it and builds real playing skills: ' +
-      'piece values, safe captures, forks, promotion, castling, en passant, stalemate and two-move checkmates.</p>' +
+      'piece values, safe captures, forks, promotion and picking the new piece, castling, en passant, stalemate and two-move checkmates.</p>' +
       '<h3>How to help</h3><ul>' +
       '<li>Sit together. 5 to 10 minutes a day is plenty for a 4-year-old.</li>' +
       '<li>Let them try first. The 💡 Hint button makes the right piece glow. Use it before frustration sets in.</li>' +
@@ -1847,7 +1948,7 @@ var CHAPTERS = [
       '<h3>What each adventure teaches</h3><table><tr><th>Adventure</th><th>Your child learns</th><th>Try this together</th></tr>' + rows + '</table>' +
       '<h3>Simplified on purpose</h3><p class="small">Draws by repetition are left out. Castling only appears in "The Castle Move". En passant is taught in "En Passant!" and used in Kings & Pawns; ' +
       'Season 1\'s Pawn Wars leaves it out because it hasn\'t been taught yet. ' +
-      'Pawns always become a Queen. Kings are never captured. Pawn Wars: the first pawn to reach the far side wins; if the player to move is stuck, it\'s a tie. ' +
+      'In Pawn Wars and Kings & Pawns, reaching the far side wins at once, so those games don\'t ask which piece to make. Kings are never captured. Pawn Wars: the first pawn to reach the far side wins; if the player to move is stuck, it\'s a tie. ' +
       'Kings & Pawns: make a Queen or checkmate to win; being stuck without check, or 40 moves in a row without a pawn move or capture, is a tie.</p>' +
       '<h3>Settings</h3><div class="settings">' +
       '<label><input type="checkbox" id="gVoice"' + (s.voice ? ' checked' : '') + '> Read aloud</label>' +
